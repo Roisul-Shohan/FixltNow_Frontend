@@ -1,7 +1,9 @@
 "use client";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 import { PublicNavbar } from "@/components/public/navbar";
 import { PublicFooter } from "@/components/public/footer";
 import { ServiceCard } from "@/components/services/service-card";
@@ -11,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import type { Category, Service, ApiSuccess } from "@/types";
 
-export default function ServicesPage() {
+function ServicesBrowser() {
   const sp = useSearchParams();
   const q = sp.get("q") ?? "";
   const category = sp.get("category") ?? "";
@@ -31,7 +33,13 @@ export default function ServicesPage() {
   }
   params.set("limit", "12");
 
-  const { data: servicesRes, isLoading: l1 } = useQuery<ApiSuccess<Service[]>>({
+  const {
+    data: servicesRes,
+    isLoading: l1,
+    isError,
+    error,
+    refetch,
+  } = useQuery<ApiSuccess<Service[]>>({
     queryKey: ["services", params.toString()],
     queryFn: async () => {
       const res = await api.get(`/services?${params.toString()}`);
@@ -51,6 +59,50 @@ export default function ServicesPage() {
   const total = servicesRes?.meta?.total ?? 0;
   const categories = categoriesRes?.data ?? [];
 
+  return (
+    <section className="container py-8 md:py-12 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
+      <aside className="md:sticky md:top-20 md:self-start">
+        <ServicesFilters categories={categories} total={total} />
+      </aside>
+
+      <div>
+        {l1 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <Skeleton key={i} className="h-72" />
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-destructive">Failed to load services</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {(error as Error)?.message || "Network error. Please check your connection."}
+              </p>
+              <button
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-medium text-primary hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        ) : services.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {services.map((s, i) => (
+              <ServiceCard key={s.id} service={s} index={i} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export default function ServicesPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <PublicNavbar />
@@ -83,29 +135,26 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="container py-8 md:py-12 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
-        <aside className="md:sticky md:top-20 md:self-start">
-          <ServicesFilters categories={categories} total={total} />
-        </aside>
-
-        <div>
-          {l1 ? (
+      <Suspense
+        fallback={
+          <section className="container py-8 md:py-12 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
+            <aside className="md:sticky md:top-20 md:self-start">
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            </aside>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 9 }).map((_, i) => (
                 <Skeleton key={i} className="h-72" />
               ))}
             </div>
-          ) : services.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {services.map((s, i) => (
-                <ServiceCard key={s.id} service={s} index={i} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+          </section>
+        }
+      >
+        <ServicesBrowser />
+      </Suspense>
 
       <PublicFooter />
     </div>
