@@ -133,7 +133,7 @@ export default function HomePage() {
             : ((categories as Category[]) ?? []).slice(0, 5).map((c) => {
                 const Icon = iconMap[c.name] ?? Wrench;
                 return (
-                  <Link key={c.id} href={`/services?category=${c.slug ?? c.id}`}>
+                  <Link key={c.id} href={`/services?category=${encodeURIComponent(c.name)}`}>
                     <motion.div whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
                       <Card className="h-full cursor-pointer hover:border-primary hover:shadow-lg hover:shadow-primary/10">
                         <CardContent className="p-6 flex flex-col items-center text-center">
