@@ -37,6 +37,33 @@ export interface Technician {
   category?: { name: string; slug?: string };
 }
 
+// Shape returned by GET /api/technicians — the backend hydrates the
+// `user` relation and a list of `service`s for each profile. Cards on
+// /technicians read both `user.name` and the nested `service` array.
+export interface TechnicianProfile {
+  id: string;
+  userId: string;
+  bio?: string | null;
+  yearsOfExperience?: number | null;
+  averageRating?: number;
+  totalReviews?: number;
+  user: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string | null;
+    profileImage?: string | null;
+  };
+  service?: Array<{
+    id: string;
+    title: string;
+    hourlyRate: string | number;
+    location?: string;
+    averageRating?: number;
+    category?: { id: string; name: string };
+  }>;
+}
+
 export interface AvailabilitySlot {
   id: string;
   date: string;
