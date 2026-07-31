@@ -5,12 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatBDT(amount: number) {
-  return new Intl.NumberFormat("en-BD", {
-    style: "currency",
-    currency: "BDT",
-    maximumFractionDigits: 0,
-  }).format(amount);
+export function formatBDT(amount: number | string) {
+  // The Prisma schema declares hourlyRate as Decimal, which Postgres returns
+  // to the API as a string. Accept either type and coerce defensively.
+  // en-BD locale Intl support is inconsistent on Windows/Node, so build the
+  // string manually with the Bangladeshi taka symbol and grouped thousands.
+  const numeric =
+    typeof amount === "number"
+      ? amount
+      : typeof amount === "string" && amount.trim() !== ""
+      ? Number(amount)
+      : NaN;
+  const value = Number.isFinite(numeric) ? Math.round(numeric) : 0;
+  const grouped = value.toLocaleString("en-US");
+  return `৳${grouped}`;
 }
 
 export function formatDate(iso: string) {
