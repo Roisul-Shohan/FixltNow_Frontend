@@ -8,8 +8,19 @@ import { formatBDT } from "@/lib/utils";
 import type { Service } from "@/types";
 
 export function ServiceCard({ service, index = 0 }: { service: Service; index?: number }) {
-  const tech = service.technician;
+  // API returns technician as { id, bio, ..., user: { name, profileImage } }
+  // but our existing Technician type keeps a flat `name`. Read both shapes so
+  // the card never renders blank when the type/runtime diverge.
+  const tech = service.technician as
+    | (typeof service.technician & { user?: { name?: string } })
+    | undefined;
+  const techName =
+    (tech as any)?.user?.name ?? (tech as any)?.name ?? "";
+  const techInitial = techName ? techName.charAt(0).toUpperCase() : "?";
   const category = service.category;
+  const rating = service.averageRating ?? 0;
+  const reviews = service.totalReviews ?? 0;
+  const hasRating = rating > 0;
 
   return (
     <motion.div
@@ -30,7 +41,7 @@ export function ServiceCard({ service, index = 0 }: { service: Service; index?: 
                 {category.name}
               </Badge>
             ) : null}
-            {typeof service.averageRating === "number" && service.averageRating >= 4.5 ? (
+            {hasRating && rating >= 4.5 ? (
               <Badge className="absolute top-3 right-3" variant="success">
                 Top Rated
               </Badge>
@@ -47,34 +58,44 @@ export function ServiceCard({ service, index = 0 }: { service: Service; index?: 
               </p>
             </div>
 
-            {tech?.name ? (
+            {techName ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-primary to-cyan-400 text-white text-[10px] font-semibold">
-                  {tech.name.charAt(0).toUpperCase()}
+                  {techInitial}
                 </span>
-                <span className="line-clamp-1">by {tech.name}</span>
+                <span className="line-clamp-1">by {techName}</span>
               </div>
             ) : null}
 
-            <div className="mt-auto flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-1 text-sm">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span className="font-medium">{service.averageRating?.toFixed(1) ?? "New"}</span>
-                <span className="text-muted-foreground">
-                  ({service.totalReviews ?? 0})
+            {/* Rating + Location: prominent row above the price footer */}
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/10 px-2 py-1">
+                <Star className={`h-3.5 w-3.5 ${hasRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                <span className="font-semibold text-foreground">
+                  {hasRating ? rating.toFixed(1) : "New"}
                 </span>
+                <span className="text-muted-foreground">({reviews})</span>
               </div>
-              <div className="text-right">
-                <div className="font-bold text-foreground">
+              {service.location ? (
+                <div className="inline-flex items-center gap-1 text-muted-foreground min-w-0">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate max-w-[140px]">{service.location}</span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-auto flex items-end justify-between pt-3 border-t">
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Hourly rate
+                </div>
+                <div className="font-bold text-lg text-foreground leading-tight">
                   {formatBDT(service.hourlyRate)}
                   <span className="text-xs text-muted-foreground font-normal">/hr</span>
                 </div>
-                {service.location ? (
-                  <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground mt-0.5">
-                    <MapPin className="h-3 w-3" />
-                    <span className="line-clamp-1 max-w-[120px]">{service.location}</span>
-                  </div>
-                ) : null}
+              </div>
+              <div className="text-[11px] text-muted-foreground group-hover:text-primary transition-colors">
+                View details →
               </div>
             </div>
           </CardContent>
