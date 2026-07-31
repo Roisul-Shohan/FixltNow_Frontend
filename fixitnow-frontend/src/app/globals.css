@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --primary: 199 89% 58%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 199 89% 58%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 199 89% 58%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* LightRays container baseline */
+.lightrays-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Hero gradient overlay that pairs well with light rays */
+.hero-overlay {
+  background:
+    radial-gradient(ellipse at top, hsl(var(--primary) / 0.18), transparent 60%),
+    linear-gradient(to bottom, hsl(var(--background)), hsl(var(--background)));
+}
+
+/* Subtle shimmer for loading skeletons */
+.shimmer {
+  background-image: linear-gradient(90deg,
+    hsl(var(--muted)) 0%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+}
