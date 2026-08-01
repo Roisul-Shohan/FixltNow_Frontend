@@ -184,8 +184,8 @@ export default function CustomerDashboardPage() {
             </motion.div>
           </section>
 
-          {/* Error state */}
-          {isError ? (
+          {/* Soft banner — only for unexpected errors, not 404s */}
+          {isError && !isEndpointMissing(error) ? (
             <div className="mb-8 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
               <div className="text-sm">
@@ -196,6 +196,28 @@ export default function CustomerDashboardPage() {
                   {(error as any)?.response?.data?.message ||
                     (error as any)?.message ||
                     "Please check your connection and try again."}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                onClick={() => refetch()}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : null}
+          {isError && isEndpointMissing(error) ? (
+            <div className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold text-amber-700 dark:text-amber-300">
+                  Dashboard metrics unavailable.
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  The backend isn&apos;t serving <code>/bookings/me/dashboard</code> yet.
+                  Numbers below will be empty until it&apos;s deployed.
                 </p>
               </div>
               <Button
@@ -802,4 +824,10 @@ function RecommendedServiceCard({
       </Link>
     </motion.div>
   );
+}
+
+/** True when the backend doesn't ship the dashboard endpoint (404 / 405). */
+function isEndpointMissing(err: unknown) {
+  const status = (err as any)?.response?.status;
+  return status === 404 || status === 405;
 }
