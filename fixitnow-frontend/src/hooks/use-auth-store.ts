@@ -6,6 +6,8 @@ import type { User } from "@/types";
 
 interface AuthState {
   user: User | null;
+  token: string | null;
+  refreshToken: string | null;
   loading: boolean;
   initialized: boolean;
   setUser: (u: User | null) => void;
@@ -19,6 +21,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
+      refreshToken: null,
       loading: false,
       initialized: false,
       setUser: (u) => set({ user: u }),
@@ -34,21 +38,34 @@ export const useAuthStore = create<AuthState>()(
       },
       login: async (email, password) => {
         const res = await api.post("/auth/login", { email, password });
-        const user = res.data?.data?.user ?? res.data?.data ?? res.data;
-        set({ user });
+        const payload = res.data?.data ?? res.data;
+        const user = payload?.user ?? payload;
+        const token = payload?.accessToken ?? null;
+        const refreshToken = payload?.refreshToken ?? null;
+        set({ user, token, refreshToken });
         return user;
       },
       register: async (payload) => {
         const res = await api.post("/auth/register", payload);
-        const user = res.data?.data?.user ?? res.data?.data ?? res.data;
-        set({ user });
+        const data = res.data?.data ?? res.data;
+        const user = data?.user ?? data;
+        const token = data?.accessToken ?? null;
+        const refreshToken = data?.refreshToken ?? null;
+        set({ user, token, refreshToken });
         return user;
       },
       logout: async () => {
         try { await api.post("/auth/logout"); } catch {}
-        set({ user: null });
+        set({ user: null, token: null, refreshToken: null });
       },
     }),
-    { name: "fixitnow-auth", partialize: (s) => ({ user: s.user }) }
+    {
+      name: "fixitnow-auth",
+      partialize: (s) => ({
+        user: s.user,
+        token: s.token,
+        refreshToken: s.refreshToken,
+      }),
+    }
   )
 );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/public/theme-toggle";
 import { Wrench, User as UserIcon, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -47,6 +48,7 @@ export function PublicNavbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
           {user ? (
             <>
               <Button variant="ghost" asChild>
@@ -91,6 +93,12 @@ export function PublicNavbar() {
             className="md:hidden border-t bg-background overflow-hidden"
           >
             <div className="container py-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between pb-2 mb-1 border-b">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Theme
+                </span>
+                <ThemeToggle />
+              </div>
               <MobileLink href="/services" onClick={() => setOpen(false)}>Services</MobileLink>
               <MobileLink href="/technicians" onClick={() => setOpen(false)}>Technicians</MobileLink>
               <MobileLink href="/categories" onClick={() => setOpen(false)}>Categories</MobileLink>
