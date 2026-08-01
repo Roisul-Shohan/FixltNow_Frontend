@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/public/theme-toggle";
 import { Wrench, User as UserIcon, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function PublicNavbar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -23,6 +24,7 @@ export function PublicNavbar() {
   }, []);
 
   const dashboardHref = user?.role === "ADMIN" ? "/admin" : user?.role === "TECHNICIAN" ? "/tech" : "/dashboard";
+  const isOnDashboard = pathname === dashboardHref;
 
   return (
     <header
@@ -51,11 +53,13 @@ export function PublicNavbar() {
           <ThemeToggle />
           {user ? (
             <>
-              <Button variant="ghost" asChild>
-                <Link href={dashboardHref}>
-                  <LayoutDashboard className="h-4 w-4" /> Dashboard
-                </Link>
-              </Button>
+              {!isOnDashboard ? (
+                <Button variant="ghost" asChild>
+                  <Link href={dashboardHref}>
+                    <LayoutDashboard className="h-4 w-4" /> Dashboard
+                  </Link>
+                </Button>
+              ) : null}
               <div className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-xs">
                   {user.name?.slice(0, 2).toUpperCase()}
@@ -104,7 +108,9 @@ export function PublicNavbar() {
               <MobileLink href="/categories" onClick={() => setOpen(false)}>Categories</MobileLink>
               {user ? (
                 <>
-                  <MobileLink href={dashboardHref} onClick={() => setOpen(false)}>Dashboard</MobileLink>
+                  {!isOnDashboard ? (
+                    <MobileLink href={dashboardHref} onClick={() => setOpen(false)}>Dashboard</MobileLink>
+                  ) : null}
                   <Button variant="outline" onClick={async () => { await logout(); setOpen(false); router.push("/"); }}>
                     Logout
                   </Button>

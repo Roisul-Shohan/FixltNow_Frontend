@@ -26,6 +26,8 @@ import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { PublicNavbar } from "@/components/public/navbar";
+import { PublicFooter } from "@/components/public/footer";
 
 type Role = "CUSTOMER" | "TECHNICIAN";
 
@@ -111,65 +113,90 @@ function RegisterForm() {
   }
 
   return (
-    <main className="container py-10 md:py-16">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to home
-      </Link>
+    <main className="relative overflow-hidden">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 hero-overlay"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 dot-grid opacity-50"
+      />
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_460px] items-start">
-        {/* Left: brand panel */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="hidden lg:block"
+      <div className="container py-10 md:py-16">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-cyan-400 text-white shadow-lg shadow-primary/30">
-              <Wrench className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
+          Back to home
+        </Link>
+
+        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_500px] items-start">
+          {/* Left: brand panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="hidden lg:block"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-cyan-400 text-white shadow-lg shadow-primary/30">
+                <Wrench className="h-5 w-5" />
+              </div>
+              <span className="text-xl font-bold tracking-tight">
+                Fix<span className="text-primary">It</span>Now
+              </span>
             </div>
-            <span className="text-xl font-bold tracking-tight">
-              Fix<span className="text-primary">It</span>Now
-            </span>
-          </div>
-          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">
-            Join{" "}
-            <span className="bg-gradient-to-r from-primary via-cyan-400 to-sky-400 bg-clip-text text-transparent">
-              FixItNow
-            </span>
-          </h1>
-          <p className="mt-3 text-muted-foreground max-w-md">
-            Create an account to book services or grow your business as a
-            technician in your area.
-          </p>
+            <h1 className="text-4xl xl:text-5xl font-bold tracking-tight leading-tight">
+              Join{" "}
+              <span className="text-gradient">FixItNow</span>
+            </h1>
+            <p className="mt-3 text-muted-foreground max-w-md">
+              Create an account to book services or grow your business as a
+              technician in your area.
+            </p>
 
-          <ul className="mt-8 space-y-4 text-sm">
-            {[
-              "Choose your role — customer or technician",
-              "Bookings, payments, and history in one place",
-              "Built-in availability for technicians",
-            ].map((line) => (
-              <li key={line} className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <ShieldCheck className="h-4 w-4" />
-                </span>
-                <span className="text-muted-foreground">{line}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
+            <ul className="mt-8 space-y-3 text-sm">
+              {[
+                {
+                  title: "Pick your role",
+                  desc: "Customer or technician — switch any time",
+                },
+                {
+                  title: "All-in-one history",
+                  desc: "Bookings, payments, and conversations in one place",
+                },
+                {
+                  title: "Built-in availability",
+                  desc: "Technicians manage slots directly from the dashboard",
+                },
+              ].map((line) => (
+                <li
+                  key={line.title}
+                  className="card-premium card-halo flex items-start gap-3 p-3"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                    <ShieldCheck className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <div className="font-medium">{line.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {line.desc}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
 
-        {/* Right: form card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.05 }}
-          className="rounded-2xl border bg-card p-6 sm:p-8 shadow-sm"
-        >
+          {/* Right: form card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="card-premium card-halo p-6 sm:p-8"
+          >
           <div className="flex items-center gap-2 lg:hidden mb-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-cyan-400 text-white">
               <Wrench className="h-4 w-4" />
@@ -462,6 +489,7 @@ function RegisterForm() {
             .
           </p>
         </motion.div>
+        </div>
       </div>
     </main>
   );
@@ -469,16 +497,20 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Suspense
-        fallback={
-          <div className="flex-1 grid place-items-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        }
-      >
-        <RegisterForm />
-      </Suspense>
-    </div>
+    <>
+      <PublicNavbar />
+      <div className="flex-1">
+        <Suspense
+          fallback={
+            <div className="grid min-h-[50vh] place-items-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
+          <RegisterForm />
+        </Suspense>
+      </div>
+      <PublicFooter />
+    </>
   );
 }

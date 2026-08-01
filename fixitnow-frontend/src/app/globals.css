@@ -4,54 +4,83 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Light theme — bright, airy, premium */
+    --background: 210 40% 99%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
     --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 210 40% 99%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
     --accent: 199 89% 48%;
-    --accent-foreground: 210 40% 98%;
+    --accent-foreground: 210 40% 99%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
+
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 199 89% 48%;
-    --radius: 0.75rem;
+    --radius: 0.85rem;
+
+    /* Brand accents */
+    --brand-1: 199 89% 48%;   /* sky-cyan */
+    --brand-2: 187 92% 50%;   /* cyan-400 */
+    --brand-3: 217 91% 60%;   /* blue-500 */
+    --brand-soft: 199 89% 95%;
   }
 
   .dark {
-    --background: 222 47% 6%;
+    /* Dark theme — deep navy with cyan glow, layered surfaces */
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
+    --card: 222 40% 9%;
     --card-foreground: 210 40% 98%;
-    --primary: 199 89% 58%;
+    --popover: 222 40% 9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 199 89% 60%;
     --primary-foreground: 222 47% 6%;
-    --secondary: 217 33% 17%;
+    --secondary: 217 33% 14%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 199 89% 58%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 199 89% 60%;
     --accent-foreground: 222 47% 6%;
-    --destructive: 0 63% 50%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 199 89% 58%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 199 89% 60%;
+
+    /* Brand accents tuned for dark */
+    --brand-1: 199 89% 60%;
+    --brand-2: 187 95% 60%;
+    --brand-3: 230 95% 70%;
+    --brand-soft: 199 89% 14%;
   }
 }
 
 @layer base {
   * { @apply border-border; }
+  html { scroll-behavior: smooth; }
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  ::selection {
+    background: hsl(var(--primary) / 0.25);
+    color: hsl(var(--foreground));
+  }
 }
+
+/* ---------- Decorative helpers ---------- */
 
 /* LightRays container baseline */
 .lightrays-wrap {
@@ -65,8 +94,16 @@
 /* Hero gradient overlay that pairs well with light rays */
 .hero-overlay {
   background:
-    radial-gradient(ellipse at top, hsl(var(--primary) / 0.18), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.18), transparent 60%),
     linear-gradient(to bottom, hsl(var(--background)), hsl(var(--background)));
+}
+
+.dark .hero-overlay {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.28), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, hsl(230 95% 70% / 0.18), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 20% 30%, hsl(187 95% 60% / 0.15), transparent 60%),
+    linear-gradient(to bottom, hsl(222 47% 5%), hsl(222 47% 5%));
 }
 
 /* Subtle shimmer for loading skeletons */
@@ -74,4 +111,142 @@
   background-image: linear-gradient(90deg,
     hsl(var(--muted)) 0%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--muted)) 100%);
   background-size: 200% 100%;
+}
+
+/* ---------- Reusable dark-aware surfaces ---------- */
+
+/* Aurora background: fixed, subtle, behind everything */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: hsl(var(--background));
+}
+
+.aurora-bg::before,
+.aurora-bg::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  opacity: 0.5;
+}
+
+.aurora-bg::before {
+  width: 520px;
+  height: 520px;
+  top: -120px;
+  left: -120px;
+  background: hsl(var(--brand-1) / 0.18);
+}
+
+.aurora-bg::after {
+  width: 560px;
+  height: 560px;
+  bottom: -180px;
+  right: -160px;
+  background: hsl(var(--brand-3) / 0.18);
+}
+
+.dark .aurora-bg::before { background: hsl(var(--brand-1) / 0.30); opacity: 0.6; }
+.dark .aurora-bg::after  { background: hsl(var(--brand-3) / 0.28); opacity: 0.55; }
+
+/* Premium card with gradient border that becomes more visible in dark */
+.card-premium {
+  position: relative;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow:
+    0 1px 0 hsl(var(--foreground) / 0.02),
+    0 8px 24px -12px hsl(222 47% 11% / 0.08);
+  overflow: hidden;
+}
+
+.dark .card-premium {
+  background: linear-gradient(180deg, hsl(222 40% 11%) 0%, hsl(222 40% 8%) 100%);
+  border-color: hsl(217 33% 22%);
+  box-shadow:
+    0 1px 0 hsl(var(--foreground) / 0.04) inset,
+    0 20px 50px -20px hsl(222 47% 2% / 0.9);
+}
+
+/* Conic-gradient halo that shows up subtly in dark mode */
+.card-halo {
+  position: relative;
+}
+.card-halo::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 180deg at 50% 50%,
+    hsl(var(--brand-1) / 0.0) 0deg,
+    hsl(var(--brand-1) / 0.35) 90deg,
+    hsl(var(--brand-3) / 0.35) 180deg,
+    hsl(var(--brand-2) / 0.35) 270deg,
+    hsl(var(--brand-1) / 0.0) 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.dark .card-halo::before { opacity: 0.55; }
+.card-halo:hover::before { opacity: 0.85; }
+
+/* Soft dot grid that fades in for dark */
+.dot-grid {
+  background-image: radial-gradient(
+    hsl(var(--muted-foreground) / 0.18) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  background-position: 0 0;
+}
+.dark .dot-grid {
+  background-image: radial-gradient(
+    hsl(var(--brand-1) / 0.10) 1px,
+    transparent 1px
+  );
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* Gradient text used in headlines */
+.text-gradient {
+  background: linear-gradient(135deg,
+    hsl(var(--brand-1)) 0%,
+    hsl(var(--brand-2)) 50%,
+    hsl(var(--brand-3)) 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+}
+
+/* Glow ring used on focus for inputs in dark */
+.glow-ring {
+  box-shadow: 0 0 0 1px hsl(var(--ring) / 0.4),
+              0 0 30px -8px hsl(var(--primary) / 0.55);
+}
+
+/* Stat tile background (works in both modes) */
+.stat-tile {
+  background: linear-gradient(180deg,
+    hsl(var(--card)) 0%,
+    hsl(var(--card) / 0.7) 100%);
+  border: 1px solid hsl(var(--border));
+}
+.dark .stat-tile {
+  background: linear-gradient(180deg,
+    hsl(222 40% 12%) 0%,
+    hsl(222 40% 8%) 100%);
+  border-color: hsl(217 33% 22%);
 }
