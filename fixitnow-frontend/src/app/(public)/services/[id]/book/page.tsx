@@ -307,11 +307,11 @@ export default function BookServicePage({ params }: PageProps) {
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <h1 className="text-2xl font-bold">Booking confirmed</h1>
-            <p className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               Your booking is now <Badge variant="warning">PENDING</Badge> and
               waiting for {techName}&apos;s confirmation. We&apos;ll notify you
               once accepted.
-            </p>
+            </div>
 
             <div className="rounded-xl border bg-muted/40 p-4 text-left text-sm space-y-2">
               <div className="flex justify-between">

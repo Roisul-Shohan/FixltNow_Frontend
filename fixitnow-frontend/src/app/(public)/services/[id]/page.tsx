@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -69,7 +69,18 @@ export default function ServiceDetailPage({ params }: PageProps) {
     enabled: Boolean(id),
   });
 
-  const service = res?.data;
+  // Backend wraps the service in ApiSuccess<T>, so r.data looks like
+  // `{ success, statusCode, message, data: <Service> }`. Some legacy
+  // endpoints strip the wrapper and return the service directly; this
+  // defensive unwrap handles both shapes so a future backend change
+  // doesn't silently render an empty page.
+  const raw = res?.data as unknown;
+  const service: Service | undefined =
+    raw && typeof raw === "object" && "id" in (raw as any) && !(raw as any).data?.id
+      ? (raw as Service)
+      : raw && typeof raw === "object" && "data" in (raw as any) && (raw as any).data?.id
+      ? ((raw as any).data as Service)
+      : undefined;
   const tech = service?.technician as
     | (NonNullable<Service["technician"]> & { user?: { name?: string; email?: string; profileImage?: string } })
     | undefined;
@@ -77,11 +88,21 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const techInitial = techName.charAt(0).toUpperCase();
   const category = service?.category;
   const reviews = service?.reviews ?? [];
-  const availabilities = (service as any)?.availabilities ?? (tech as any)?.avalability ?? [];
+  // Backend prisma model spells the relation `avalability` (typo baked
+  // into the schema). We surface the slots from whichever path the
+  // backend happened to populate.
+  const availabilities = (tech as any)?.avalability ?? (service as any)?.availabilities ?? [];
 
   const rating = service?.averageRating ?? 0;
   const reviewsCount = service?.totalReviews ?? reviews.length;
   const hasRating = rating > 0;
+
+  // Role-aware CTA: customers can book, the technician who owns this
+  // service goes to their dashboard, guests are nudged to sign in.
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role ?? null;
+  const isCustomer = role === "CUSTOMER";
+  const isOwner = role === "TECHNICIAN" && tech && (tech as any).user?.id === user?.id;
 
   // Group availability slots by date for cleaner rendering
   const slotsByDate = useMemo(() => {
@@ -103,6 +124,11 @@ export default function ServiceDetailPage({ params }: PageProps) {
   // book" toggle that used to live here.
   const bookHref = useMemo(() => `/services/${id}/book`, [id]);
   const ctaLabel = "Book this service";
+
+  // Technician who owns this service: swap the CTA for "Manage in
+  // dashboard" so they don't end up booking their own listing.
+  const ctaHref = isOwner ? "/tech" : bookHref;
+  const finalCtaLabel = isOwner ? "Manage in dashboard" : ctaLabel;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -359,10 +385,18 @@ export default function ServiceDetailPage({ params }: PageProps) {
               </div>
 
               <Button asChild className="w-full" size="lg">
-                <Link href={bookHref}>{ctaLabel}</Link>
+                <Link href={ctaHref}>{finalCtaLabel}</Link>
               </Button>
 
-              {!isCustomer ? (
+              {isOwner ? (
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                  <span>
+                    This is your service. Open the dashboard to edit
+                    availability or pause the listing.
+                  </span>
+                </div>
+              ) : !isCustomer ? (
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                   <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                   <span>
