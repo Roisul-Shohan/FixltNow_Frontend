@@ -8,6 +8,9 @@ import { Users, Sparkles, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { TechnicianCard } from "@/components/technicians/technician-card";
 import { TechniciansFilters } from "@/components/technicians/filters-bar";
+import { SearchStrip } from "@/components/public/search-strip";
+import { PublicNavbar } from "@/components/public/navbar";
+import { PublicFooter } from "@/components/public/footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ApiSuccess, TechnicianProfile } from "@/types";
 
@@ -50,7 +53,7 @@ function TechniciansBrowser() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-      <aside className="lg:sticky lg:top-20 self-start">
+      <aside className="lg:sticky lg:top-20 self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-1 lg:-mr-1">
         <TechniciansFilters total={total} />
       </aside>
 
@@ -107,38 +110,61 @@ function TechniciansBrowser() {
 
 export default function TechniciansPage() {
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-cyan-400/10 to-sky-400/5 p-8 md:p-12"
-      >
-        <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative max-w-2xl space-y-3">
-          <div className="inline-flex items-center gap-1.5 rounded-full border bg-background/80 backdrop-blur px-3 py-1 text-xs text-muted-foreground">
+    <div className="min-h-screen flex flex-col">
+      <PublicNavbar />
+
+      <section className="relative isolate overflow-hidden">
+        <div className="lightrays-wrap">
+          <div className="lightrays-wrap" />
+        </div>
+        <div className="hero-overlay absolute inset-0" />
+        <div className="container relative z-10 py-16 md:py-24 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="inline-flex items-center gap-1.5 rounded-full border bg-background/80 backdrop-blur px-3 py-1 text-xs text-muted-foreground"
+          >
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             Vetted home-service professionals
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight inline-flex items-center gap-3">
-            <Users className="h-7 w-7 text-primary" />
-            Meet our technicians
-          </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
+          </motion.div>
+          <motion.h1
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="mt-4 text-3xl md:text-5xl font-bold tracking-tight"
+          >
+            Meet our{" "}
+            <span className="bg-gradient-to-r from-primary via-cyan-400 to-sky-400 bg-clip-text text-transparent">
+              technicians
+            </span>
+          </motion.h1>
+          <motion.p
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="mt-3 text-muted-foreground max-w-xl mx-auto"
+          >
             Browse FixItNow&apos;s trusted electricians, plumbers, carpenters and
-            more. Filter by experience and rating to find the right pro for
-            your home.
-          </p>
+            more. Filter by experience and rating to find the right pro for your
+            home.
+          </motion.p>
         </div>
-      </motion.section>
+      </section>
+
+      <SearchStrip
+        basePath="/technicians"
+        placeholder="Search technicians by name or specialty (e.g. plumber, AC repair)"
+        hint="Try “plumber Dhaka”, “electrician Mirpur”, or a name."
+      />
 
       <Suspense
         fallback={
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-            <aside className="lg:sticky lg:top-20 self-start">
+          <div className="container mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+            <aside className="lg:sticky lg:top-20 self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-1 lg:-mr-1">
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-24 w-full" />
               </div>
             </aside>
@@ -152,6 +178,8 @@ export default function TechniciansPage() {
       >
         <TechniciansBrowser />
       </Suspense>
+
+      <PublicFooter />
     </div>
   );
 }

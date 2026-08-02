@@ -175,56 +175,75 @@ export default function TechnicianDashboardPage() {
 
         <div className="container py-8 md:py-12">
           {/* Header */}
-          <section className="mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-            >
-              <div>
-                <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+          <section className="mb-10">
+            <div className="relative isolate overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-cyan-400/10 to-sky-400/5 px-6 py-10 md:px-10 md:py-14">
+              <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+              <div className="hero-overlay absolute inset-0 -z-10" />
+              <div className="relative flex flex-col items-center text-center gap-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="inline-flex items-center gap-1.5 rounded-full border bg-background/80 backdrop-blur px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
+                >
                   <Briefcase className="h-3.5 w-3.5" />
                   Technician Dashboard
-                </p>
-                <h1 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">
+                </motion.div>
+                <motion.h1
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.4, delay: 0.05 }}
+                  className="text-3xl md:text-5xl font-bold tracking-tight"
+                >
                   {greeting},{" "}
-                  <span className="text-gradient">{firstName}</span>
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground max-w-lg">
+                  <span className="bg-gradient-to-r from-primary via-cyan-400 to-sky-400 bg-clip-text text-transparent">
+                    {firstName}
+                  </span>
+                </motion.h1>
+                <motion.p
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.4, delay: 0.15 }}
+                  className="max-w-xl text-sm md:text-base text-muted-foreground"
+                >
                   Track your bookings, earnings, and reviews — all in one
                   place.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetch()}
-                  disabled={isRefetching}
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.25 }}
+                  className="flex flex-wrap items-center justify-center gap-2 pt-2"
                 >
-                  <RefreshCw
-                    className={cn(
-                      "h-4 w-4",
-                      isRefetching && "animate-spin"
-                    )}
-                  />
-                  Refresh
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/tech/availability">
-                    <Settings2 className="h-4 w-4" />
-                    Availability
-                  </Link>
-                </Button>
-                <Button variant="gradient" asChild>
-                  <Link href="/tech/services/new">
-                    <Wrench className="h-4 w-4" />
-                    Add service
-                  </Link>
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                    disabled={isRefetching}
+                  >
+                    <RefreshCw
+                      className={cn(
+                        "h-4 w-4",
+                        isRefetching && "animate-spin"
+                      )}
+                    />
+                    Refresh
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/tech/availability">
+                      <Settings2 className="h-4 w-4" />
+                      Availability
+                    </Link>
+                  </Button>
+                  <Button variant="gradient" asChild>
+                    <Link href="/tech/services/new">
+                      <Wrench className="h-4 w-4" />
+                      Add service
+                    </Link>
+                  </Button>
+                </motion.div>
               </div>
-            </motion.div>
+            </div>
           </section>
 
           {/* Profile quick card */}

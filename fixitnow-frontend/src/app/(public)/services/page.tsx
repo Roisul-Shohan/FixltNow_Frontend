@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 import { PublicNavbar } from "@/components/public/navbar";
 import { PublicFooter } from "@/components/public/footer";
+import { SearchStrip } from "@/components/public/search-strip";
 import { ServiceCard } from "@/components/services/service-card";
 import { ServicesFilters } from "@/components/services/filters-bar";
 import { EmptyState } from "@/components/services/empty-state";
@@ -61,7 +62,7 @@ function ServicesBrowser() {
 
   return (
     <section className="container py-8 md:py-12 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
-      <aside className="md:sticky md:top-20 md:self-start">
+      <aside className="md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-5rem)] md:overflow-y-auto md:pr-1 md:-mr-1">
         <ServicesFilters categories={categories} total={total} />
       </aside>
 
@@ -135,13 +136,19 @@ export default function ServicesPage() {
         </div>
       </section>
 
+      <SearchStrip
+        basePath="/services"
+        placeholder="Search services (e.g. plumbing, cleaning, AC repair)"
+        hint="Try “ac repair Dhaka”, “plumber Mirpur”, or a category like “electrician”."
+      />
+
       <Suspense
         fallback={
           <section className="container py-8 md:py-12 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
-            <aside className="md:sticky md:top-20 md:self-start">
+            <aside className="md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-5rem)] md:overflow-y-auto md:pr-1 md:-mr-1">
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-24 w-full" />
               </div>
             </aside>
