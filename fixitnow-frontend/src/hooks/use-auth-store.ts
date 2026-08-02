@@ -36,11 +36,59 @@ export const useAuthStore = create<AuthState>()(
       loadMe: async () => {
         try {
           set({ loading: true });
+
+          // If we don't have an access token but DO have a refresh token,
+          // try to refresh proactively so the user doesn't see a brief
+          // logged-out flash before the request interceptor catches up.
+          if (typeof window !== "undefined") {
+            try {
+              const raw = window.localStorage.getItem("fixitnow-auth");
+              const parsed = raw ? JSON.parse(raw) : null;
+              const hasAccess = !!(parsed?.state?.token || parsed?.token);
+              const hasRefresh = !!(
+                parsed?.state?.refreshToken || parsed?.refreshToken
+              );
+              if (!hasAccess && hasRefresh) {
+                const { refreshAccessToken } = await import("@/lib/api");
+                await refreshAccessToken();
+              }
+            } catch {
+              /* ignore — fall through to /auth/me */
+            }
+          }
+
           const res = await api.get("/auth/me");
           const u = res.data?.data ?? res.data;
           set({ user: u, initialized: true, loading: false });
         } catch {
-          set({ user: null, initialized: true, loading: false });
+          // Only clear the user if the refresh token is also dead.
+          // The response interceptor handles transient 401s; if we land
+          // here, the refresh token is gone or the server rejected the
+          // session entirely.
+          let refreshDead = true;
+          if (typeof window !== "undefined") {
+            try {
+              const { refreshAccessToken } = await import("@/lib/api");
+              const ok = await refreshAccessToken();
+              if (ok) {
+                // Refresh worked — try /auth/me one more time before giving up.
+                try {
+                  const res2 = await api.get("/auth/me");
+                  const u2 = res2.data?.data ?? res2.data;
+                  set({ user: u2, initialized: true, loading: false });
+                  refreshDead = false;
+                  return;
+                } catch {
+                  /* fall through to clear */
+                }
+              }
+            } catch {
+              /* fall through to clear */
+            }
+          }
+          if (refreshDead) {
+            set({ user: null, initialized: true, loading: false });
+          }
         }
       },
       login: async (email, password) => {

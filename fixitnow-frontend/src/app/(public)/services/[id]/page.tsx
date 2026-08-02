@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -20,6 +20,7 @@ import {
 
 import { api } from "@/lib/api";
 import { cn, formatBDT, formatDate } from "@/lib/utils";
+import { useAuthStore } from "@/hooks/use-auth-store";
 import { PublicNavbar } from "@/components/public/navbar";
 import { PublicFooter } from "@/components/public/footer";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,25 @@ import type { ApiSuccess, Service } from "@/types";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+};
+
+const toDateKey = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+// Backend may serialize Availability.date as either an ISO string ("2025-11-22")
+// or a Date object — normalize to a plain YYYY-MM-DD key so the day-by-day
+// grouping matches the booking page's keys.
+const normalizeSlotDate = (value: unknown): string => {
+  if (!value) return "unknown";
+  if (typeof value === "string") {
+    return value.length >= 10 ? value.slice(0, 10) : value;
+  }
+  if (value instanceof Date) return toDateKey(value);
+  return String(value);
 };
 
 export default function ServiceDetailPage({ params }: PageProps) {
@@ -67,13 +87,22 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const slotsByDate = useMemo(() => {
     const map = new Map<string, typeof availabilities>();
     for (const slot of availabilities) {
-      const key = slot?.date ?? "unknown";
+      const key = normalizeSlotDate(slot?.date);
       const arr = map.get(key) ?? [];
       arr.push(slot);
       map.set(key, arr);
     }
     return Array.from(map.entries()).slice(0, 5);
   }, [availabilities]);
+
+  // CTA: every visitor goes to the same /book route.
+  //   • Signed-in CUSTOMERs see the booking form immediately.
+  //   • Guests are redirected to /login?next=… by the booking page.
+  //   • Non-customer roles (technician/admin) are sent to /dashboard.
+  // This keeps the CTA label constant and removes the redundant "Login to
+  // book" toggle that used to live here.
+  const bookHref = useMemo(() => `/services/${id}/book`, [id]);
+  const ctaLabel = "Book this service";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -330,25 +359,33 @@ export default function ServiceDetailPage({ params }: PageProps) {
               </div>
 
               <Button asChild className="w-full" size="lg">
-                <Link href={`/login?next=/services/${service.id}/book`}>
-                  Book this service
-                </Link>
+                <Link href={bookHref}>{ctaLabel}</Link>
               </Button>
 
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                <span>
-                  You will be redirected to login to confirm your booking. New
-                  here?{" "}
-                  <Link
-                    href={`/register?next=/services/${service.id}/book`}
-                    className="text-primary hover:underline"
-                  >
-                    Create an account
-                  </Link>
-                  .
-                </span>
-              </div>
+              {!isCustomer ? (
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                  <span>
+                    You will be redirected to login to confirm your booking.
+                    New here?{" "}
+                    <Link
+                      href={`/register?next=/services/${service.id}/book`}
+                      className="text-primary hover:underline"
+                    >
+                      Create an account
+                    </Link>
+                    .
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                  <span>
+                    Pick a date and time on the next step to confirm your
+                    booking.
+                  </span>
+                </div>
+              )}
             </motion.div>
           </aside>
         </main>

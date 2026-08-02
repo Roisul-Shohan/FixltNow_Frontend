@@ -106,9 +106,20 @@ api.interceptors.response.use(
     if (!original) return Promise.reject(error);
 
     const status = error.response?.status;
-    const isAuthRoute = (original.url ?? "").includes("/auth/");
+    // Only skip refresh for routes that either can't use a refresh token or
+    // would loop forever. `/auth/me` is an authenticated endpoint and MUST be
+    // allowed to refresh — otherwise the user gets silently logged out every
+    // 15 minutes when their access token expires.
+    const url = original.url ?? "";
+    const isAuthBootstrap =
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/refresh-token") ||
+      url.includes("/auth/logout") ||
+      url.includes("/auth/forgot") ||
+      url.includes("/auth/reset");
 
-    if (status !== 401 || original._retry || isAuthRoute) {
+    if (status !== 401 || original._retry || isAuthBootstrap) {
       return Promise.reject(error);
     }
 
@@ -146,6 +157,8 @@ api.interceptors.response.use(
     }
   }
 );
+
+export { refreshAccessToken };
 
 function readToken(): string | undefined {
   if (typeof window === "undefined") return undefined;

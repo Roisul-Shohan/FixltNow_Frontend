@@ -55,21 +55,19 @@ const toDateKey = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
-const buildHourlyOptions = (slot: { startTime: string; endTime: string }) => {
-  const [sh, sm] = slot.startTime.split(":").map(Number);
-  const [eh, em] = slot.endTime.split(":").map(Number);
-  const slotMinutes = eh * 60 + em - (sh * 60 + sm);
-  // Backend rounds up to whole hours, so cap duration at floor(slotMinutes/60) hours.
-  const maxHours = Math.max(1, Math.floor(slotMinutes / 60));
-  return Array.from({ length: maxHours }, (_, i) => i + 1);
+const toMinutes = (hhmm: string): number => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
 };
 
-const addHours = (hhmm: string, hours: number) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  const total = h * 60 + m + hours * 60;
-  const nh = Math.floor(total / 60);
-  const nm = total % 60;
-  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
+const isValidHHmm = (s: string): boolean => /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+
+const formatDuration = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h} hr${h > 1 ? "s" : ""}`;
+  return `${h} hr${h > 1 ? "s" : ""} ${m} min`;
 };
 
 const nextSevenDays = () => {
@@ -88,18 +86,32 @@ export default function BookServicePage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
   const { user, token, initialized, loadMe } = useAuthStore();
+  // `router` is kept imported in case we ever need to deep-link elsewhere;
+  // currently the inline auth gate handles sign-in without navigation.
+  void router;
 
-  const [authChecked, setAuthChecked] = useState(false);
+  // Auth rule for booking:
+  //   • Logged-in CUSTOMER  → stay on this page, see the booking form.
+  //   • Logged-in non-CUSTOMER → send to their dashboard (they can't book).
+  //   • Guest (no token) → send to /login with a `next` so we bounce back
+  //     here after sign-in.
+  // The effect only fires once `initialized` resolves, so already-logged-in
+  // users never see a flash of the login screen.
+  const [authChecked, setAuthChecked] = useState(initialized);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
-  const [durationHours, setDurationHours] = useState<number>(1);
+  // Free-form start/end the customer types in (HH:mm). Constrained to the
+  // selected slot's bounds by both UI (min/max attributes) and validation below.
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [successBooking, setSuccessBooking] = useState<BookingSuccess | null>(
     null,
   );
 
-  // Ensure we know the auth state on first render.
+  // Make sure we've asked /auth/me at least once so we know whether to
+  // redirect. This only runs once per visit.
   useEffect(() => {
     if (!initialized) {
       loadMe().finally(() => setAuthChecked(true));
@@ -108,20 +120,26 @@ export default function BookServicePage({ params }: PageProps) {
     }
   }, [initialized, loadMe]);
 
-  // Auth gate: must be a CUSTOMER.
+  const isCustomer = Boolean(token) && user?.role === "CUSTOMER";
+  const isLoggedInNonCustomer =
+    Boolean(token) && !!user && user.role !== "CUSTOMER";
+
+  // Redirect guests to /login and non-customers to their dashboard. This is
+  // idempotent: logged-in customers fall through and the booking form renders.
   useEffect(() => {
     if (!authChecked) return;
-    if (!token || !user) {
-      router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+    if (isCustomer) return;
+    if (isLoggedInNonCustomer) {
+      router.replace("/dashboard");
       return;
     }
-    if (user.role !== "CUSTOMER") {
-      // Browse away to dashboard — only customers can book.
-      router.replace(`/dashboard`);
-    }
-  }, [authChecked, token, user, router]);
+    router.replace(
+      `/login?next=${encodeURIComponent(window.location.pathname)}`,
+    );
+  }, [authChecked, isCustomer, isLoggedInNonCustomer, router]);
 
-  // Fetch service details.
+  // Fetch service details. We only fetch once the user is a confirmed
+  // CUSTOMER so guests never see slots before being redirected.
   const {
     data: res,
     isLoading,
@@ -134,7 +152,7 @@ export default function BookServicePage({ params }: PageProps) {
       const r = await api.get(`/services/${id}`);
       return r.data;
     },
-    enabled: authChecked && Boolean(token) && user?.role === "CUSTOMER",
+    enabled: authChecked && isCustomer,
   });
 
   const service = res?.data;
@@ -146,13 +164,30 @@ export default function BookServicePage({ params }: PageProps) {
     | undefined;
   const techName = (tech as any)?.user?.name ?? (tech as any)?.name ?? "Technician";
   const techInitial = techName.charAt(0).toUpperCase();
-  const rawAvailabilities = (service as any)?.availabilities ?? [];
+  // Backend returns availability on `service.technician.avalability` (typo
+  // preserved on purpose so the existing Prisma relation keeps working). Both
+  // are arrays of { id, date: Date|string, startTime, endTime, ... }.
+  const rawAvailabilities =
+    (tech as any)?.avalability ??
+    (service as any)?.availabilities ??
+    [];
 
-  // Group slots by date key.
+  // Group slots by date key. `slot.date` may arrive as an ISO string ("2025-11-22")
+  // or as a Date object depending on the JSON serializer path — handle both.
+  const normalizeSlotDate = (value: unknown): string => {
+    if (!value) return "unknown";
+    if (typeof value === "string") {
+      // ISO "YYYY-MM-DD..." → take the date part.
+      return value.length >= 10 ? value.slice(0, 10) : value;
+    }
+    if (value instanceof Date) return toDateKey(value);
+    return String(value);
+  };
+
   const slotsByDate = useMemo(() => {
     const map = new Map<string, typeof rawAvailabilities>();
     for (const slot of rawAvailabilities) {
-      const key = slot?.date ?? "unknown";
+      const key = normalizeSlotDate(slot?.date);
       const arr = map.get(key) ?? [];
       arr.push(slot);
       map.set(key, arr);
@@ -177,12 +212,50 @@ export default function BookServicePage({ params }: PageProps) {
 
   const slotsForSelected = (selectedDate && slotsByDate.get(selectedDate)) || [];
   const selectedSlot = slotsForSelected.find((s: any) => s.id === selectedSlotId);
-  const hourlyOptions = selectedSlot ? buildHourlyOptions(selectedSlot) : [];
-  const clampedDuration = Math.min(durationHours, hourlyOptions[hourlyOptions.length - 1] ?? 1);
 
-  const startTime = selectedSlot?.startTime ?? "";
-  const endTime = selectedSlot ? addHours(selectedSlot.startTime, clampedDuration) : "";
-  const estimatedTotal = service ? Number(service.hourlyRate) * clampedDuration : 0;
+  // When the customer picks a new slot, default the time inputs to the slot's
+  // full window. They can then trim either end freely.
+  useEffect(() => {
+    if (!selectedSlot) {
+      setStartTime("");
+      setEndTime("");
+      return;
+    }
+    setStartTime(selectedSlot.startTime);
+    setEndTime(selectedSlot.endTime);
+  }, [selectedSlotId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Validate the customer's free-form times against the selected slot.
+  const timeValidation = useMemo(() => {
+    if (!selectedSlot) return { ok: false, reason: "" as string };
+    if (!startTime || !endTime) {
+      return { ok: false, reason: "Please choose both a start and an end time." };
+    }
+    if (!isValidHHmm(startTime) || !isValidHHmm(endTime)) {
+      return { ok: false, reason: "Please enter a valid time (HH:mm)." };
+    }
+    const slotStart = toMinutes(selectedSlot.startTime);
+    const slotEnd = toMinutes(selectedSlot.endTime);
+    const cs = toMinutes(startTime);
+    const ce = toMinutes(endTime);
+    if (cs < slotStart || ce > slotEnd) {
+      return {
+        ok: false,
+        reason: `Time must be inside the slot (${selectedSlot.startTime}–${selectedSlot.endTime}).`,
+      };
+    }
+    if (ce <= cs) {
+      return { ok: false, reason: "End time must be after start time." };
+    }
+    return { ok: true, reason: "" };
+  }, [selectedSlot, startTime, endTime]);
+
+  const durationMinutes = timeValidation.ok
+    ? toMinutes(endTime) - toMinutes(startTime)
+    : 0;
+  // Backend rounds up to whole hours; show the same billable figure in the UI.
+  const billableHours = Math.max(1, Math.ceil(durationMinutes / 60));
+  const estimatedTotal = service ? Number(service.hourlyRate) * billableHours : 0;
 
   const createBooking = useMutation({
     mutationFn: async () => {
@@ -212,6 +285,8 @@ export default function BookServicePage({ params }: PageProps) {
     Boolean(service) &&
     Boolean(selectedDate) &&
     Boolean(selectedSlot) &&
+    timeValidation.ok &&
+    durationMinutes > 0 &&
     address.trim().length >= 5 &&
     !submitting &&
     !successBooking;
@@ -307,7 +382,12 @@ export default function BookServicePage({ params }: PageProps) {
             </p>
           </header>
 
-          {isLoading || !authChecked ? (
+          {!authChecked || !isCustomer ? (
+            // Auth check still in flight, or the redirect above is about to
+            // fire — show a skeleton so the user never sees a flash of an
+            // empty form before the router.replace kicks in.
+            <FormSkeleton />
+          ) : isLoading ? (
             <FormSkeleton />
           ) : isError || !service ? (
             <ErrorState
@@ -382,7 +462,6 @@ export default function BookServicePage({ params }: PageProps) {
                           type="button"
                           onClick={() => {
                             setSelectedSlotId(slot.id);
-                            setDurationHours(1);
                           }}
                           className={cn(
                             "rounded-lg border px-3 py-2.5 text-sm font-mono transition-all",
@@ -400,36 +479,62 @@ export default function BookServicePage({ params }: PageProps) {
                 </Section>
               )}
 
-              {/* Duration */}
+              {/* Customer-entered start/end time, constrained to the chosen slot */}
               {selectedSlot && (
                 <Section
                   icon={<Clock className="h-4 w-4 text-primary" />}
-                  title="How many hours?"
-                  hint={`Slot allows up to ${hourlyOptions.length} hour${hourlyOptions.length === 1 ? "" : "s"}`}
+                  title="What time works for you?"
+                  hint={`Type any time between ${selectedSlot.startTime} and ${selectedSlot.endTime} (15-minute steps).`}
                 >
-                  <div className="flex flex-wrap gap-2">
-                    {hourlyOptions.map((h) => {
-                      const active = h === clampedDuration;
-                      return (
-                        <button
-                          key={h}
-                          type="button"
-                          onClick={() => setDurationHours(h)}
-                          className={cn(
-                            "rounded-full border px-4 py-1.5 text-sm transition-all",
-                            active
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "bg-card hover:border-primary/50 hover:bg-primary/5",
-                          )}
-                        >
-                          {h} hr{h > 1 ? "s" : ""}
-                        </button>
-                      );
-                    })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Start time
+                      </span>
+                      <input
+                        type="time"
+                        value={startTime}
+                        min={selectedSlot.startTime}
+                        max={selectedSlot.endTime}
+                        step={900}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="mt-1 w-full rounded-lg border bg-card px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        End time
+                      </span>
+                      <input
+                        type="time"
+                        value={endTime}
+                        min={selectedSlot.startTime}
+                        max={selectedSlot.endTime}
+                        step={900}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="mt-1 w-full rounded-lg border bg-card px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      />
+                    </label>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    End time: <span className="font-mono">{endTime}</span>
-                  </p>
+
+                  {timeValidation.ok ? (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Duration: <span className="font-medium text-foreground">
+                        {formatDuration(durationMinutes)}
+                      </span>{" "}
+                      · billed as {billableHours} hr
+                      {billableHours > 1 ? "s" : ""} ({" "}
+                      {formatBDT(
+                        service ? Number(service.hourlyRate) * billableHours : 0,
+                      )}{" "}
+                      )
+                    </p>
+                  ) : timeValidation.reason ? (
+                    <p className="text-xs text-destructive mt-2 inline-flex items-center gap-1">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {timeValidation.reason}
+                    </p>
+                  ) : null}
                 </Section>
               )}
 
@@ -481,7 +586,7 @@ export default function BookServicePage({ params }: PageProps) {
                   techName={techName}
                   startTime={startTime}
                   endTime={endTime}
-                  duration={clampedDuration}
+                  durationLabel={timeValidation.ok ? formatDuration(durationMinutes) : "—"}
                   total={estimatedTotal}
                   address={address}
                   loading={submitting}
@@ -508,7 +613,7 @@ export default function BookServicePage({ params }: PageProps) {
               dateKey={selectedDate}
               startTime={startTime}
               endTime={endTime}
-              duration={clampedDuration}
+              durationLabel={timeValidation.ok ? formatDuration(durationMinutes) : "—"}
               total={estimatedTotal}
               address={address}
               loading={submitting}
@@ -568,7 +673,7 @@ function BookingSummary({
   dateKey,
   startTime,
   endTime,
-  duration,
+  durationLabel,
   total,
   address,
   loading,
@@ -584,7 +689,7 @@ function BookingSummary({
   dateKey: string | null;
   startTime: string;
   endTime: string;
-  duration: number;
+  durationLabel: string;
   total: number;
   address: string;
   loading: boolean;
@@ -640,7 +745,7 @@ function BookingSummary({
         />
         <SummaryRow
           label="Duration"
-          value={`${duration} hr${duration > 1 ? "s" : ""}`}
+          value={durationLabel}
         />
         <SummaryRow
           label="Rate"
@@ -698,7 +803,7 @@ function MobileSummary(props: {
   techName: string;
   startTime: string;
   endTime: string;
-  duration: number;
+  durationLabel: string;
   total: number;
   address: string;
   loading: boolean;

@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { LightRays } from "@/components/light-rays";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,19 +36,9 @@ export default function HomePage() {
       <PublicNavbar />
 
       <section className="relative isolate overflow-hidden">
-        <div className="lightrays-wrap">
-          <LightRays
-            raysOrigin="top-center"
-            raysColor="#22d3ee"
-            raysSpeed={0.6}
-            lightSpread={1.2}
-            rayLength={1.8}
-            followMouse
-            mouseInfluence={0.15}
-            noiseAmount={0.05}
-            saturation={1}
-          />
-        </div>
+        {/* Local LightRays removed — the global one in app/providers.tsx
+            already paints the rays across the entire app. We keep the
+            hero-overlay gradient for extra punch. */}
         <div className="hero-overlay absolute inset-0" />
         <div className="container relative z-10 py-24 md:py-36 text-center">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}>
