@@ -33,6 +33,7 @@ import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dropdown } from "@/components/ui/dropdown-menu";
 import { PublicNavbar } from "@/components/public/navbar";
 import { PublicFooter } from "@/components/public/footer";
 import type { ApiSuccess, Role } from "@/types";
@@ -282,7 +283,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <FilterPill
+                <Dropdown
                   label="Role"
                   value={role}
                   onChange={(v) => setRole(v as RoleFilter)}
@@ -297,7 +298,7 @@ export default function AdminUsersPage() {
                     { label: "Admin", value: "ADMIN", icon: ShieldCheck },
                   ]}
                 />
-                <FilterPill
+                <Dropdown
                   label="Status"
                   value={status}
                   onChange={(v) => setStatus(v as StatusFilter)}
@@ -527,41 +528,6 @@ function SortHeader({
         )}
       />
     </button>
-  );
-}
-
-function FilterPill({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: Array<{
-    label: string;
-    value: string;
-    icon?: React.ComponentType<{ className?: string }>;
-  }>;
-}) {
-  return (
-    <div className="inline-flex items-center rounded-lg border bg-background overflow-hidden">
-      <span className="px-3 py-1.5 text-xs text-muted-foreground border-r">
-        {label}
-      </span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 bg-transparent px-3 text-sm outline-none focus:ring-0"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }
 

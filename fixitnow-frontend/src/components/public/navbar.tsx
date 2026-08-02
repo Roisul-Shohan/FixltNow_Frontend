@@ -24,7 +24,11 @@ export function PublicNavbar() {
   }, []);
 
   const dashboardHref = user?.role === "ADMIN" ? "/admin" : user?.role === "TECHNICIAN" ? "/tech" : "/dashboard";
-  const isOnDashboard = pathname === dashboardHref;
+  // Treat any descendant route of the user's dashboard as "already on dashboard"
+  // (e.g. /admin/users, /tech/bookings) so we don't show a redundant link.
+  const isOnDashboard =
+    pathname === dashboardHref ||
+    pathname.startsWith(`${dashboardHref}/`);
 
   return (
     <header

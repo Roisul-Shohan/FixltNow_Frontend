@@ -11,6 +11,11 @@ interface AuthState {
   loading: boolean;
   initialized: boolean;
   setUser: (u: User | null) => void;
+  /**
+   * Replace the access / refresh token pair without touching `user`.
+   * Used by the api.ts interceptor after a successful refresh.
+   */
+  setTokens: (token: string, refreshToken: string | null) => void;
   loadMe: () => Promise<void>;
   login: (email: string, password: string) => Promise<User>;
   register: (payload: any) => Promise<User>;
@@ -26,6 +31,8 @@ export const useAuthStore = create<AuthState>()(
       loading: false,
       initialized: false,
       setUser: (u) => set({ user: u }),
+      setTokens: (token, refreshToken) =>
+        set({ token, refreshToken }),
       loadMe: async () => {
         try {
           set({ loading: true });

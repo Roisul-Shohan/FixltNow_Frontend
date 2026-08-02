@@ -1,11 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://fixlit-now.vercel.app/api";
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "https://fixlit-now.vercel.app/api";
 
-// Note: We use Bearer token auth (Authorization header), NOT cookies.
-// Setting withCredentials:true forces a CORS preflight that the backend
-// does not currently satisfy (no Access-Control-Allow-Credentials header).
-// We attach the token via the request interceptor below.
+// We use Bearer-token auth (Authorization header). The backend also writes
+// `accessToken` / `refreshToken` as `httpOnly` cookies but those are not
+// available to JS and not used by this client.
 export const api = axios.create({
   baseURL: API_BASE,
   withCredentials: false,
@@ -13,7 +13,9 @@ export const api = axios.create({
   timeout: 30000,
 });
 
-// Attach JWT from localStorage / zustand persist on every request.
+// Pull the access/refresh pair from the persisted zustand store on every
+// request. Reading directly from localStorage keeps the interceptor
+// independent from React.
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     try {
@@ -27,65 +29,133 @@ api.interceptors.request.use((config) => {
         }
       }
     } catch {
-      // ignore
+      // ignore — interceptor must never throw
     }
   }
   return config;
 });
 
-// In-memory flag to avoid refresh-token loops
+// ────────────────────────────────────────────────────────────────────────────
+// Refresh-token plumbing
+// ────────────────────────────────────────────────────────────────────────────
+//
+// Goal: a single 401 anywhere in the app should transparently swap in a
+// fresh access token (using the long-lived refresh token) and retry the
+// original request. Only when the refresh token itself is rejected do we
+// give up — and even then we don't redirect; the calling code decides.
+//
+// Concurrency: if several requests fail with 401 at the same time they
+// share a single in-flight refresh call. Subsequent callers wait on a
+// promise that resolves when the new access token is available.
+
 let isRefreshing = false;
-let pendingQueue: Array<(token?: string) => void> = [];
+let pendingQueue: Array<() => void> = [];
+
+interface RefreshResult {
+  token: string;
+  refreshToken: string | null;
+}
+
+async function refreshAccessToken(): Promise<RefreshResult | null> {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem("fixitnow-auth");
+  if (!raw) return null;
+  let parsed: any = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const refresh = parsed?.state?.refreshToken || parsed?.refreshToken;
+  if (!refresh) return null;
+
+  try {
+    // Use raw axios (NOT the `api` instance) so the response interceptor
+    // doesn't run on the refresh call itself — would loop forever.
+    const res = await axios.post(
+      `${API_BASE}/auth/refresh-token`,
+      { refreshToken: refresh },
+      { headers: { "Content-Type": "application/json" }, timeout: 30000 }
+    );
+    const data = res.data?.data ?? res.data;
+    const token = data?.accessToken ?? null;
+    const newRefresh = data?.refreshToken ?? refresh;
+    if (!token) return null;
+
+    // Persist new tokens. Reading through localStorage avoids a circular
+    // dependency on the zustand store.
+    try {
+      const next = { ...parsed };
+      next.state = { ...(parsed.state ?? {}), token, refreshToken: newRefresh };
+      window.localStorage.setItem("fixitnow-auth", JSON.stringify(next));
+    } catch {
+      // ignore — token may still be in-memory for the rest of this tab
+    }
+    return { token, refreshToken: newRefresh };
+  } catch {
+    return null;
+  }
+}
 
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (
-      error.response?.status === 401 &&
-      !original._retry &&
-      !original.url?.includes("/auth/")
-    ) {
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          pendingQueue.push(() => resolve());
-        }).then(() => api(original));
-      }
-      original._retry = true;
-      isRefreshing = true;
-      try {
-        // Try to refresh token. Use Bearer of the stored refresh token.
-        const raw =
-          typeof window !== "undefined" ? window.localStorage.getItem("fixitnow-auth") : null;
-        const parsed = raw ? JSON.parse(raw) : null;
-        const refresh = parsed?.state?.refreshToken || parsed?.refreshToken;
-        await axios.post(`${API_BASE}/auth/refresh`, null, {
-          headers: refresh ? { Authorization: `Bearer ${refresh}` } : undefined,
-        });
-        pendingQueue.forEach((cb) => cb());
-        pendingQueue = [];
-        return api(original);
-      } catch (e) {
-        pendingQueue.forEach((cb) => cb());
-        pendingQueue = [];
-        throw e;
-      } finally {
-        isRefreshing = false;
-      }
+    const original = error.config as
+      | (InternalAxiosRequestConfig & { _retry?: boolean })
+      | undefined;
+    if (!original) return Promise.reject(error);
+
+    const status = error.response?.status;
+    const isAuthRoute = (original.url ?? "").includes("/auth/");
+
+    if (status !== 401 || original._retry || isAuthRoute) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    original._retry = true;
+
+    // If a refresh is already in flight, queue this call and wait for it.
+    if (isRefreshing) {
+      await new Promise<void>((resolve) => {
+        pendingQueue.push(resolve);
+      });
+      // After the in-flight refresh settles, retry with the freshly-stored
+      // access token (the request interceptor will pick it up).
+      original.headers = original.headers ?? ({} as any);
+      (original.headers as any).Authorization = `Bearer ${readToken()}`;
+      return api(original);
+    }
+
+    isRefreshing = true;
+    try {
+      const result = await refreshAccessToken();
+      // Always wake queued callers, even on failure — they each get to
+      // re-decide based on the error from their retry attempt.
+      pendingQueue.forEach((cb) => cb());
+      pendingQueue = [];
+
+      if (!result) {
+        return Promise.reject(error);
+      }
+
+      original.headers = original.headers ?? ({} as any);
+      (original.headers as any).Authorization = `Bearer ${result.token}`;
+      return api(original);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
-// Server-side fetch helper (RSC) — credentials omitted, no cookies.
-export async function serverFetch(path: string, init: RequestInit = {}) {
-  const { headers, ...rest } = init;
-  const base = API_BASE.replace(/\/api$/, "");
-  const url = `${base}${path.startsWith("/api") ? path : `/api${path}`}`;
-  const res = await fetch(url, {
-    ...rest,
-    headers: { "Content-Type": "application/json", ...(headers as any) },
-    cache: "no-store",
-  });
-  return res;
+function readToken(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem("fixitnow-auth");
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed?.state?.token || parsed?.token || undefined;
+  } catch {
+    return undefined;
+  }
 }
+
+// Server-side fetch helper (RSC) — no cookies, no interceptors.
