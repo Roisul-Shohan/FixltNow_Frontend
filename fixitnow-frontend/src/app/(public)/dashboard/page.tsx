@@ -22,6 +22,7 @@ import {
   XCircle,
   ArrowRight,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 
 import { api } from "@/lib/api";
@@ -134,337 +135,355 @@ export default function CustomerDashboardPage() {
     (user?.name || payload?.profile?.name || "").split(" ")[0] || "there";
 
   return (
-    <>
-      <PublicNavbar />
-      <div className="aurora-bg" aria-hidden="true" />
-
-      <main className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 hero-overlay"
-        />
-
-        <div className="container py-8 md:py-12">
-          {/* Header */}
-          <section className="mb-8">
+    <div className="py-8 md:py-12">
+      {/* Hero — mirrors the technician dashboard header pattern */}
+      <section className="mb-10">
+        <div className="relative isolate overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-cyan-400/10 to-sky-400/5 px-6 py-10 md:px-10 md:py-14">
+          <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+          <div className="hero-overlay absolute inset-0 -z-10" />
+          <div className="relative flex flex-col items-center text-center gap-4">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+              className="inline-flex items-center gap-1.5 rounded-full border bg-background/80 backdrop-blur px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
             >
-              <div>
-                <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
-                  <LayoutDashboard className="h-3.5 w-3.5" />
-                  Customer Dashboard
-                </p>
-                <h1 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">
-                  {greeting},{" "}
-                  <span className="text-gradient">{firstName}</span>
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground max-w-lg">
-                  Here&apos;s a quick look at your bookings, spending, and what
-                  we think you might need next.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" asChild>
-                  <Link href="/services">
-                    <Wrench className="h-4 w-4" />
-                    Browse services
-                  </Link>
-                </Button>
-                <Button variant="gradient" asChild>
-                  <Link href="/services">
-                    <Plus className="h-4 w-4" />
-                    Book a service
-                  </Link>
-                </Button>
-              </div>
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              Customer Dashboard
             </motion.div>
-          </section>
-
-          {/* Soft banner — only for unexpected errors, not 404s */}
-          {isError && !isEndpointMissing(error) ? (
-            <div className="mb-8 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-semibold text-destructive">
-                  Couldn&apos;t load your dashboard.
-                </p>
-                <p className="text-muted-foreground mt-1">
-                  {(error as any)?.response?.data?.message ||
-                    (error as any)?.message ||
-                    "Please check your connection and try again."}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-auto"
-                onClick={() => refetch()}
-              >
-                Retry
+            <motion.h1
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className="text-3xl md:text-5xl font-bold tracking-tight"
+            >
+              {greeting},{" "}
+              <span className="bg-gradient-to-r from-primary via-cyan-400 to-sky-400 bg-clip-text text-transparent">
+                {firstName}
+              </span>
+            </motion.h1>
+            <motion.p
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="max-w-xl text-sm md:text-base text-muted-foreground"
+            >
+              Here&apos;s a quick look at your bookings, spending, and what we
+              think you might need next.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="flex flex-wrap items-center justify-center gap-2 pt-2"
+            >
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4" />
+                Refresh
               </Button>
-            </div>
-          ) : null}
-          {isError && isEndpointMissing(error) ? (
-            <div className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-semibold text-amber-700 dark:text-amber-300">
-                  Dashboard metrics unavailable.
-                </p>
-                <p className="text-muted-foreground mt-1">
-                  The backend isn&apos;t serving <code>/bookings/me/dashboard</code> yet.
-                  Numbers below will be empty until it&apos;s deployed.
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-auto"
-                onClick={() => refetch()}
-              >
-                Retry
-              </Button>
-            </div>
-          ) : null}
-
-          {/* Stat tiles */}
-          <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            {isLoading || !summary
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-28 rounded-xl" />
-                ))
-              : (
-                <>
-                  <StatTile
-                    label="Total bookings"
-                    value={summary.totalBookings}
-                    icon={Calendar}
-                    accent="from-primary/15 to-cyan-400/10"
-                  />
-                  <StatTile
-                    label="Upcoming"
-                    value={summary.upcomingBookings}
-                    icon={CalendarClock}
-                    accent="from-sky-500/15 to-blue-500/10"
-                  />
-                  <StatTile
-                    label="Completed"
-                    value={summary.completedBookings}
-                    icon={CheckCircle2}
-                    accent="from-emerald-500/15 to-green-500/10"
-                  />
-                  <StatTile
-                    label="Spent (lifetime)"
-                    value={formatBDT(spending?.total ?? 0)}
-                    icon={CreditCard}
-                    accent="from-amber-500/15 to-orange-500/10"
-                    text
-                  />
-                </>
-              )}
-          </section>
-
-          {/* Spending snapshot card */}
-          <section className="mb-8">
-            <SpendingCard
-              loading={isLoading}
-              spending={spending}
-              thisMonthCount={summary?.pendingBookings ?? 0}
-            />
-          </section>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Upcoming bookings */}
-            <section className="lg:col-span-2 card-premium card-halo p-5 sm:p-6">
-              <SectionHeader
-                icon={CalendarClock}
-                title="Upcoming bookings"
-                subtitle="Jobs scheduled in the next 7 days"
-                right={
-                  <Link
-                    href="/services"
-                    className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Book another
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
-                }
-              />
-
-              {isLoading ? (
-                <div className="mt-5 space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-20 rounded-lg" />
-                  ))}
-                </div>
-              ) : upcoming.length === 0 ? (
-                <EmptyMini
-                  title="No upcoming bookings"
-                  description="Browse our verified technicians and book a job in seconds."
-                  ctaHref="/services"
-                  ctaLabel="Find a technician"
-                />
-              ) : (
-                <ul className="mt-5 space-y-3">
-                  {upcoming.map((b) => (
-                    <BookingRow key={b.id} booking={b} />
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            {/* Recent reviews */}
-            <section className="card-premium card-halo p-5 sm:p-6">
-              <SectionHeader
-                icon={MessageSquare}
-                title="Recent reviews"
-                subtitle="What you&apos;ve said lately"
-              />
-
-              {isLoading ? (
-                <div className="mt-5 space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 rounded-lg" />
-                  ))}
-                </div>
-              ) : reviews.length === 0 ? (
-                <EmptyMini
-                  title="No reviews yet"
-                  description="After a job wraps up, leave a rating to help other customers."
-                />
-              ) : (
-                <ul className="mt-5 space-y-4">
-                  {reviews.slice(0, 4).map((r) => (
-                    <li key={r.id} className="flex items-start gap-3">
-                      <Stars value={r.rating} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm line-clamp-2 text-foreground/90">
-                          {r.comment || "No comment"}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground truncate">
-                          {r.service?.title ?? "Service"} •{" "}
-                          {new Date(r.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </div>
-
-          {/* Recent bookings table-style list */}
-          <section className="mt-6 card-premium card-halo p-5 sm:p-6">
-            <SectionHeader
-              icon={Clock}
-              title="Recent activity"
-              subtitle="Your last few bookings"
-            />
-
-            {isLoading ? (
-              <div className="mt-5 space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 rounded-lg" />
-                ))}
-              </div>
-            ) : recent.length === 0 ? (
-              <EmptyMini
-                title="No activity yet"
-                description="Your bookings will appear here as soon as you make one."
-                ctaHref="/services"
-                ctaLabel="Browse services"
-              />
-            ) : (
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs uppercase tracking-wide text-muted-foreground border-b">
-                    <tr>
-                      <th className="text-left py-2 pr-3">Service</th>
-                      <th className="text-left py-2 pr-3">Technician</th>
-                      <th className="text-left py-2 pr-3">Date</th>
-                      <th className="text-right py-2">Amount</th>
-                      <th className="text-right py-2 pl-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {recent.map((b) => (
-                      <tr key={b.id} className="hover:bg-accent/40 transition-colors">
-                        <td className="py-3 pr-3 font-medium">
-                          {b.service?.title ?? "Service"}
-                        </td>
-                        <td className="py-3 pr-3 text-muted-foreground">
-                          {(b.technician as any)?.user?.name ??
-                            (b.technician as any)?.name ??
-                            "—"}
-                        </td>
-                        <td className="py-3 pr-3 text-muted-foreground whitespace-nowrap">
-                          {new Date(b.scheduledAt).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 text-right font-semibold">
-                          {formatBDT(b.totalAmount)}
-                        </td>
-                        <td className="py-3 pl-3 text-right">
-                          <StatusBadge status={b.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-
-          {/* Recommended services */}
-          <section className="mt-10">
-            <SectionHeader
-              icon={Sparkles}
-              title="Recommended for you"
-              subtitle="Top-rated services from verified technicians"
-              right={
-                <Link
-                  href="/services"
-                  className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  See all
-                  <ArrowRight className="h-3 w-3" />
+              <Button variant="outline" asChild>
+                <Link href="/services">
+                  <Wrench className="h-4 w-4" />
+                  Browse services
                 </Link>
-              }
-            />
-
-            {!recommended ? (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-56 rounded-xl" />
-                ))}
-              </div>
-            ) : recommendedServices.length === 0 ? (
-              <EmptyMini
-                title="Nothing to recommend yet"
-                description="Once you book a service, we'll tailor picks to your needs."
-              />
-            ) : (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {recommendedServices.map((s, i) => (
-                  <RecommendedServiceCard
-                    key={s.id}
-                    service={s}
-                    index={i}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+              </Button>
+              <Button variant="gradient" asChild>
+                <Link href="/services">
+                  <Plus className="h-4 w-4" />
+                  Book a service
+                </Link>
+              </Button>
+            </motion.div>
+          </div>
         </div>
-      </main>
-      <PublicFooter />
-    </>
+      </section>
+
+      {/* Soft banner — only for unexpected errors, not 404s */}
+      {isError && !isEndpointMissing(error) ? (
+        <div className="mb-8 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-semibold text-destructive">
+              Couldn&apos;t load your dashboard.
+            </p>
+            <p className="text-muted-foreground mt-1">
+              {(error as any)?.response?.data?.message ||
+                (error as any)?.message ||
+                "Please check your connection and try again."}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            onClick={() => refetch()}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
+      {isError && isEndpointMissing(error) ? (
+        <div className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-semibold text-amber-700 dark:text-amber-300">
+              Dashboard metrics unavailable.
+            </p>
+            <p className="text-muted-foreground mt-1">
+              The backend isn&apos;t serving <code>/bookings/me/dashboard</code> yet.
+              Numbers below will be empty until it&apos;s deployed.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            onClick={() => refetch()}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
+      {/* Stat tiles */}
+      <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        {isLoading || !summary
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
+            ))
+          : (
+            <>
+              <StatTile
+                label="Total bookings"
+                value={summary.totalBookings}
+                icon={Calendar}
+                accent="from-primary/15 to-cyan-400/10"
+              />
+              <StatTile
+                label="Upcoming"
+                value={summary.upcomingBookings}
+                icon={CalendarClock}
+                accent="from-sky-500/15 to-blue-500/10"
+              />
+              <StatTile
+                label="Completed"
+                value={summary.completedBookings}
+                icon={CheckCircle2}
+                accent="from-emerald-500/15 to-green-500/10"
+              />
+              <StatTile
+                label="Spent (lifetime)"
+                value={formatBDT(spending?.total ?? 0)}
+                icon={CreditCard}
+                accent="from-amber-500/15 to-orange-500/10"
+                text
+              />
+            </>
+          )}
+      </section>
+
+      {/* Spending snapshot card */}
+      <section className="mb-8">
+        <SpendingCard
+          loading={isLoading}
+          spending={spending}
+          thisMonthCount={summary?.pendingBookings ?? 0}
+        />
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Upcoming bookings */}
+        <section className="lg:col-span-2 card-premium card-halo p-5 sm:p-6">
+          <SectionHeader
+            icon={CalendarClock}
+            title="Upcoming bookings"
+            subtitle="Jobs scheduled in the next 7 days"
+            right={
+              <Link
+                href="/services"
+                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+              >
+                Book another
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            }
+          />
+
+          {isLoading ? (
+            <div className="mt-5 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-lg" />
+              ))}
+            </div>
+          ) : upcoming.length === 0 ? (
+            <EmptyMini
+              title="No upcoming bookings"
+              description="Browse our verified technicians and book a job in seconds."
+              ctaHref="/services"
+              ctaLabel="Find a technician"
+            />
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {upcoming.map((b) => (
+                <BookingRow key={b.id} booking={b} />
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Recent reviews */}
+        <section className="card-premium card-halo p-5 sm:p-6">
+          <SectionHeader
+            icon={MessageSquare}
+            title="Recent reviews"
+            subtitle="What you&apos;ve said lately"
+          />
+
+          {isLoading ? (
+            <div className="mt-5 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-lg" />
+              ))}
+            </div>
+          ) : reviews.length === 0 ? (
+            <EmptyMini
+              title="No reviews yet"
+              description="After a job wraps up, leave a rating to help other customers."
+            />
+          ) : (
+            <ul className="mt-5 space-y-4">
+              {reviews.slice(0, 4).map((r) => (
+                <li key={r.id} className="flex items-start gap-3">
+                  <Stars value={r.rating} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm line-clamp-2 text-foreground/90">
+                      {r.comment || "No comment"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground truncate">
+                      {r.service?.title ?? "Service"} •{" "}
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {/* Recent bookings table-style list */}
+      <section className="mt-6 card-premium card-halo p-5 sm:p-6">
+        <SectionHeader
+          icon={Clock}
+          title="Recent activity"
+          subtitle="Your last few bookings"
+          right={
+            <Link
+              href="/dashboard/bookings"
+              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+            >
+              See all
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          }
+        />
+
+        {isLoading ? (
+          <div className="mt-5 space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-lg" />
+            ))}
+          </div>
+        ) : recent.length === 0 ? (
+          <EmptyMini
+            title="No activity yet"
+            description="Your bookings will appear here as soon as you make one."
+            ctaHref="/services"
+            ctaLabel="Browse services"
+          />
+        ) : (
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase tracking-wide text-muted-foreground border-b">
+                <tr>
+                  <th className="text-left py-2 pr-3">Service</th>
+                  <th className="text-left py-2 pr-3">Technician</th>
+                  <th className="text-left py-2 pr-3">Date</th>
+                  <th className="text-right py-2">Amount</th>
+                  <th className="text-right py-2 pl-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {recent.map((b) => (
+                  <tr key={b.id} className="hover:bg-accent/40 transition-colors">
+                    <td className="py-3 pr-3 font-medium">
+                      {b.service?.title ?? "Service"}
+                    </td>
+                    <td className="py-3 pr-3 text-muted-foreground">
+                      {(b.technician as any)?.user?.name ??
+                        (b.technician as any)?.name ??
+                        "—"}
+                    </td>
+                    <td className="py-3 pr-3 text-muted-foreground whitespace-nowrap">
+                      {new Date(b.scheduledAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 text-right font-semibold">
+                      {formatBDT(b.totalAmount)}
+                    </td>
+                    <td className="py-3 pl-3 text-right">
+                      <StatusBadge status={b.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Recommended services */}
+      <section className="mt-10">
+        <SectionHeader
+          icon={Sparkles}
+          title="Recommended for you"
+          subtitle="Top-rated services from verified technicians"
+          right={
+            <Link
+              href="/services"
+              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+            >
+              See all
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          }
+        />
+
+        {!recommended ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-56 rounded-xl" />
+            ))}
+          </div>
+        ) : recommendedServices.length === 0 ? (
+          <EmptyMini
+            title="Nothing to recommend yet"
+            description="Once you book a service, we'll tailor picks to your needs."
+          />
+        ) : (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {recommendedServices.map((s, i) => (
+              <RecommendedServiceCard
+                key={s.id}
+                service={s}
+                index={i}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
-
 /* ---------- Pieces ---------- */
 
 function StatTile({
