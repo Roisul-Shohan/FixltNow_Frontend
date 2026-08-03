@@ -1,36 +1,36 @@
-# FixItNow — Multi-Folder Workspace
+# FixItNow — Frontend Workspace
 
-This workspace contains three sibling projects for the FixItNow home-services platform:
+This repository hosts the **FixItNow Next.js 15 frontend**.
+
+The full project documentation — features, setup, environment variables,
+project structure, scripts, and Vercel deployment guide — lives in:
+
+👉 **[`fixitnow-frontend/README.md`](./fixitnow-frontend/README.md)**
+
+---
+
+## Quick links
+
+| Resource | Link |
+| --- | --- |
+| 🚀 Live app | [https://fixlit.vercel.app](https://fixlit.vercel.app) |
+| 🛠 Backend API | [https://fixlit-now.vercel.app/api](https://fixlit-now.vercel.app/api) |
+| 📘 Frontend source | [`fixitnow-frontend/`](./fixitnow-frontend/) |
+| 📡 Backend source | [github.com/Roisul-Shohan/FixltNow](https://github.com/Roisul-Shohan/FixltNow) |
+| 📬 API docs (Postman) | [View collection](https://documenter.getpostman.com/view/49986455/2sBY4LRhJm) |
+
+---
+
+## Repository layout
 
 ```
 FixltNow_Frontend/
-├── FixltNow-Backend/       # Forked backend (Express + Prisma + Postgres + Stripe)
-├── fixitnow-frontend/      # NEW Next.js 15 frontend (this is what we build)
-└── .gitignore              # Ignores all *.env*, .puku/, .next/, FixltNow-Backend/
+└── fixitnow-frontend/      # Next.js 15 + TypeScript frontend (deployed from here)
 ```
 
-## Backend
-Original repo: https://github.com/Roisul-Shohan/FixltNow
-Live API: https://fixlit-now.vercel.app/
+The `FixltNow-Backend/` folder (if present locally) is a separate fork pushed
+from [its own repository](https://github.com/Roisul-Shohan/FixltNow) and is
+**not** tracked by this repo's git history.
 
-## Frontend
-- **Next.js 15** App Router + TypeScript
-- **shadcn/ui** for components
-- **Framer Motion** for animations
-- **LightRays** (React Bits) for hero backgrounds
-- **Zod + React Hook Form** for form validation
-- **TanStack Query** for data fetching
-- **Next.js Middleware** for role-based route protection
-
-## Environment variables
-Copy `.env.example` → `.env` in each sub-project. Production secrets live in Vercel.
-
-To pull latest production values for the backend:
-```powershell
-cd FixltNow-Backend
-vercel env pull .env.production
-```
-
-## Folder policy
-The root `.gitignore` excludes `FixltNow-Backend/` so backend changes push from **its own repo**.
-The `fixitnow-frontend/` folder is what we push from the root repository.
+For installation, development, deployment, and everything else, see the
+inner README linked above.
