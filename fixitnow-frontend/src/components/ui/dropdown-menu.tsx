@@ -34,10 +34,8 @@ DropdownMenuContent.displayName = "DropdownMenuContent";
 
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
-    selected?: boolean;
-  }
->(({ className, selected, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
+>(({ className, children, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
@@ -51,9 +49,6 @@ const DropdownMenuItem = React.forwardRef<
     {...props}
   >
     {children}
-    {selected ? (
-      <Check className="ml-auto h-4 w-4 text-primary" />
-    ) : null}
   </DropdownMenuPrimitive.Item>
 ));
 DropdownMenuItem.displayName = "DropdownMenuItem";
@@ -91,7 +86,7 @@ export function Dropdown({
   const Icon = current?.icon;
 
   return (
-    <DropdownMenu onValueChange={(v) => onChange(v)}>
+    <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
           "inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm",
@@ -113,18 +108,21 @@ export function Dropdown({
           const OptIcon = opt.icon;
           // Stable id from value; "All" (empty string) gets a literal fallback.
           const itemKey = opt.value === "" ? "__all__" : opt.value;
+          const isSelected = opt.value === value;
           return (
             <DropdownMenuItem
               key={itemKey}
-              value={opt.value}
-              selected={opt.value === value}
               onSelect={(e) => {
                 e.preventDefault?.();
                 onChange(opt.value);
               }}
+              className={cn(isSelected && "bg-accent/10 text-foreground")}
             >
               {OptIcon ? <OptIcon className="h-4 w-4" /> : <span className="inline-block h-4 w-4" />}
               <span>{opt.label}</span>
+              {isSelected ? (
+                <Check className="ml-auto h-4 w-4 text-primary" />
+              ) : null}
             </DropdownMenuItem>
           );
         })}

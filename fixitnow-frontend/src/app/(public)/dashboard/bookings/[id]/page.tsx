@@ -170,12 +170,12 @@ export default function BookingDetailPage() {
             <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-destructive">
-                Couldn't load this booking
+                {"Couldn\u2019t load this booking"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {(error as any)?.response?.data?.message ||
                   (error as any)?.message ||
-                  "It may have been deleted, or you don't have access."}
+                  "It may have been deleted, or you don\u2019t have access."}
               </p>
               <Button
                 variant="outline"
@@ -199,19 +199,22 @@ export default function BookingDetailPage() {
   const techName = booking.technician?.user?.name ?? "Technician";
 
   // Duration: derive from start/end "HH:mm" strings when present
-  const durationLabel = useMemo(() => {
-    const toMin = (s: string) => {
-      const [h, m] = s.split(":").map(Number);
-      return (h ?? 0) * 60 + (m ?? 0);
-    };
-    if (!booking.startTime || !booking.endTime) return "—";
+  const toMin = (s: string) => {
+    const [h, m] = s.split(":").map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  let durationLabel = "—";
+  if (booking.startTime && booking.endTime) {
     const diff = toMin(booking.endTime) - toMin(booking.startTime);
-    if (diff <= 0) return "—";
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    if (mins === 0) return `${hours} hour${hours === 1 ? "" : "s"}`;
-    return `${hours}h ${mins}m`;
-  }, [booking.startTime, booking.endTime]);
+    if (diff > 0) {
+      const hours = Math.floor(diff / 60);
+      const mins = diff % 60;
+      durationLabel =
+        mins === 0
+          ? `${hours} hour${hours === 1 ? "" : "s"}`
+          : `${hours}h ${mins}m`;
+    }
+  }
 
   return (
     <div className="py-8 md:py-12 max-w-4xl mx-auto">
@@ -502,7 +505,7 @@ export default function BookingDetailPage() {
           <DialogHeader>
             <DialogTitle>Cancel this booking?</DialogTitle>
             <DialogDescription>
-              The technician will be notified. This action can't be undone.
+              The technician will be notified. This action can{"\u2019"}t be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

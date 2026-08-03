@@ -149,8 +149,8 @@ export default function WriteReviewPage() {
             <Skeleton className="h-12 w-full" />
           ) : eligible.length === 0 ? (
             <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-              You don't have any completed bookings yet. Once a technician finishes
-              a job, you'll be able to leave a review here.
+              You don{"’"}t have any completed bookings yet. Once a technician finishes
+              a job, you{"’"}ll be able to leave a review here.
             </div>
           ) : (
             <select

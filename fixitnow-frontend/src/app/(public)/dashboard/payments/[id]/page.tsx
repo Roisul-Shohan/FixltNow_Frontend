@@ -101,12 +101,12 @@ export default function PaymentDetailPage() {
             <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-destructive">
-                Couldn't load this payment
+                {"Couldn’t load this payment"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {(error as any)?.response?.data?.message ||
                   (error as any)?.message ||
-                  "It may have been deleted, or you don't have access."}
+                  "It may have been deleted, or you don’t have access."}
               </p>
               <Button
                 variant="outline"

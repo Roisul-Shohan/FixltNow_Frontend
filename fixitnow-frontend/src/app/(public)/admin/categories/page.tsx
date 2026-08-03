@@ -428,7 +428,7 @@ export default function AdminCategoriesPage() {
           <DialogHeader>
             <DialogTitle>Delete category?</DialogTitle>
             <DialogDescription>
-              You're about to delete "{deleteTarget?.name}". This can't be
+              You{"’"}re about to delete &ldquo;{deleteTarget?.name}&rdquo;. This can{"’"}t be
               undone.
               {deleteTarget?._count?.service ? (
                 <span className="block mt-2 text-destructive font-semibold">
@@ -620,7 +620,7 @@ function EditCategoryDialog({
         <DialogHeader>
           <DialogTitle>Edit category</DialogTitle>
           <DialogDescription>
-            Update "{target.name}". Slug stays the same.
+            Update &ldquo;{target.name}&rdquo;. Slug stays the same.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onFormSubmit} className="space-y-4">

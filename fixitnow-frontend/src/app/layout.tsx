@@ -3,6 +3,11 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
+// The whole app is auth-gated, client-driven, and depends on a live API at
+// request time — opt out of static prerender so `next build` doesn't block on
+// reaching the backend to pre-generate every route.
+export const dynamic = "force-dynamic";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
