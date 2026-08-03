@@ -40,6 +40,10 @@ export function formatTime(iso: string) {
  * Returns a Date or null if the input is missing/invalid. Use this any time we
  * receive a date string from the API so we never end up rendering
  * "Invalid Date" in the UI.
+ *
+ * Rejects bare time strings (e.g. "03:00:00.000" coming from a Prisma `Time`
+ * column) which JavaScript would otherwise silently parse as `1970-01-01T...Z`.
+ * Real ISO timestamps and `YYYY-MM-DD` calendar dates are always accepted.
  */
 export function toDate(value: unknown): Date | null {
   if (value == null) return null;
@@ -48,6 +52,11 @@ export function toDate(value: unknown): Date | null {
   }
   const str = String(value).trim();
   if (!str || str === "null" || str === "undefined") return null;
+
+  // Bare time-of-day string ("HH:MM[:SS[.fff]]") without a date component.
+  // Prisma `Time` fields serialize this way. Parsing it would yield 1970-01-01.
+  if (/^\d{1,2}:\d{2}(:\d{2}(\.\d{1,7})?)?$/.test(str)) return null;
+
   const d = new Date(str);
   return Number.isFinite(d.getTime()) ? d : null;
 }
@@ -110,4 +119,41 @@ export function safeFromNow(
   if (abs < month) return rtf.format(Math.round(diffMs / week), "week");
   if (abs < year) return rtf.format(Math.round(diffMs / month), "month");
   return rtf.format(Math.round(diffMs / year), "year");
+}
+
+/**
+ * Format a Prisma `Time` value ("03:00:00.000") for display.
+ * Returns `fallback` when the value is missing or unparseable.
+ * Use this anywhere the API returns a Time-only field so we never render
+ * raw "HH:MM:SS.fff" noise.
+ */
+export function formatTimeOfDay(
+  value: unknown,
+  fallback = "—",
+  opts: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }
+): string {
+  if (value == null) return fallback;
+  const str = String(value).trim();
+  if (!str) return fallback;
+
+  // Prisma `Time` value: "HH:MM", "HH:MM:SS", or "HH:MM:SS.fff"
+  const m = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) {
+    // Fall back to the generic date formatter for any other shape.
+    const d = toDate(str);
+    if (!d) return fallback;
+    return d.toLocaleTimeString("en-US", opts);
+  }
+  const hours = Number(m[1]);
+  const minutes = Number(m[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return fallback;
+
+  // Build a Date using today's date so the locale formatter behaves correctly.
+  const ref = new Date();
+  ref.setHours(hours, minutes, 0, 0);
+  return ref.toLocaleTimeString("en-US", opts);
 }

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -15,10 +14,10 @@ import {
   FolderTree,
   Inbox,
   Loader2,
-  RefreshCw,
   Search,
   ShieldCheck,
   Tag,
+  Users,
   X,
 } from "lucide-react";
 
@@ -28,8 +27,6 @@ import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PublicNavbar } from "@/components/public/navbar";
-import { PublicFooter } from "@/components/public/footer";
 import type { ApiSuccess, Role } from "@/types";
 
 /* ---------- Backend payload shapes ---------- */
@@ -54,27 +51,7 @@ type SortKey = "createdAt" | "name";
 type SortOrder = "asc" | "desc";
 
 export default function AdminCategoriesPage() {
-  const router = useRouter();
   const me = useAuthStore((s) => s.user);
-  const initialized = useAuthStore((s) => s.initialized);
-  const loadMe = useAuthStore((s) => s.loadMe);
-
-  // Hydrate auth store
-  useEffect(() => {
-    if (!initialized) loadMe();
-  }, [initialized, loadMe]);
-
-  // Wrong role → push to right dashboard; not logged in → /login
-  useEffect(() => {
-    if (!initialized || typeof window === "undefined") return;
-    if (!me) {
-      router.replace("/login?next=/admin/categories");
-    } else if (me.role === "CUSTOMER") {
-      router.replace("/dashboard");
-    } else if (me.role === "TECHNICIAN") {
-      router.replace("/tech");
-    }
-  }, [initialized, me, router]);
 
   // Filter / sort / pagination state
   const [search, setSearch] = useState("");
@@ -116,7 +93,7 @@ export default function AdminCategoriesPage() {
       { debouncedSearch, sortBy, sortOrder, page, limit },
     ],
     queryFn: async () =>
-      (await api.get(`/category?${queryString}`)).data,
+      (await api.get(`/admin/categories?${queryString}`)).data,
     enabled: Boolean(me && me.role === "ADMIN"),
     staleTime: 10_000,
     placeholderData: (prev) => prev,
@@ -148,229 +125,202 @@ export default function AdminCategoriesPage() {
   const hasActiveFilters = Boolean(debouncedSearch);
 
   return (
-    <>
-      <PublicNavbar />
-      <div className="aurora-bg" aria-hidden="true" />
+    <div className="py-8 md:py-12">
+      {/* Breadcrumb + header */}
+      <section className="mb-6">
+        <div className="text-xs text-muted-foreground">
+          <Link
+            href="/admin"
+            className="hover:text-foreground transition-colors"
+          >
+            Admin
+          </Link>
+          <span className="mx-1.5">/</span>
+          <span>Categories</span>
+        </div>
 
-      <main className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 hero-overlay"
-        />
-
-        <div className="container py-8 md:py-12">
-          {/* Breadcrumb + header */}
-          <section className="mb-6">
-            <div className="text-xs text-muted-foreground">
-              <Link
-                href="/admin"
-                className="hover:text-foreground transition-colors"
-              >
-                Admin
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+              <FolderTree className="h-3.5 w-3.5" />
+              Category Management
+            </p>
+            <h1 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">
+              {greeting},{" "}
+              <span className="text-gradient">{firstName}</span>
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground max-w-lg">
+              Browse every service category on the platform. Toggle
+              platforms, expand offerings, and keep catalog fresh.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/admin/users">
+                <Users className="h-4 w-4" />
+                Manage users
               </Link>
-              <span className="mx-1.5">/</span>
-              <span>Categories</span>
-            </div>
+            </Button>
+          </div>
+        </motion.div>
+      </section>
 
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-            >
-              <div>
-                <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
-                  <FolderTree className="h-3.5 w-3.5" />
-                  Category Management
-                </p>
-                <h1 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">
-                  {greeting},{" "}
-                  <span className="text-gradient">{firstName}</span>
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground max-w-lg">
-                  Browse every service category on the platform. Toggle
-                  platforms, expand offerings, and keep catalog fresh.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetch()}
-                  disabled={isRefetching}
-                >
-                  <RefreshCw
-                    className={cn(
-                      "h-4 w-4",
-                      isRefetching && "animate-spin"
-                    )}
-                  />
-                  Refresh
-                </Button>
-                <Button variant="gradient" asChild>
-                  <Link href="/admin">
-                    <ChevronLeft className="h-4 w-4" />
-                    Back to dashboard
-                  </Link>
-                </Button>
-              </div>
-            </motion.div>
-          </section>
-
-          {/* Filter bar */}
-          <section className="card-premium card-halo p-4 sm:p-5 mb-6">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative flex-1 min-w-0">
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name or description…"
-                  className="w-full h-10 rounded-lg border bg-background pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-                {search ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-accent"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-
-              {hasActiveFilters ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearch("")}
-                >
-                  <X className="h-4 w-4" />
-                  Clear
-                </Button>
-              ) : null}
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <Filter className="h-3.5 w-3.5" />
-              <span>
-                {isLoading ? (
-                  <Skeleton className="inline-block h-3 w-12 align-middle" />
-                ) : (
-                  <span className="font-semibold text-foreground">
-                    {total}
-                  </span>
-                )}{" "}
-                total categor{total === 1 ? "y" : "ies"}
-              </span>
-              {meta ? (
-                <span>
-                  · Page <span className="font-semibold">{meta.page}</span> of{" "}
-                  <span className="font-semibold">{totalPages}</span>
-                </span>
-              ) : null}
-            </div>
-          </section>
-
-          {/* Error banner */}
-          {isError ? (
-            <div className="my-2 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-semibold text-destructive">
-                  Couldn&apos;t load categories.
-                </p>
-                <p className="text-muted-foreground mt-1">
-                  {(error as any)?.response?.data?.message ||
-                    (error as any)?.message ||
-                    "Please check your connection and try again."}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-auto"
-                onClick={() => refetch()}
+      {/* Filter bar */}
+      <section className="card-premium card-halo p-4 sm:p-5 mb-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1 min-w-0">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or description…"
+              className="w-full h-10 rounded-lg border bg-background pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:bg-accent"
+                aria-label="Clear search"
               >
-                Retry
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+
+          {hasActiveFilters ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearch("")}
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <Filter className="h-3.5 w-3.5" />
+          <span>
+            {isLoading ? (
+              <Skeleton className="inline-block h-3 w-12 align-middle" />
+            ) : (
+              <span className="font-semibold text-foreground">
+                {total}
+              </span>
+            )}{" "}
+            total categor{total === 1 ? "y" : "ies"}
+          </span>
+          {meta ? (
+            <span>
+              · Page <span className="font-semibold">{meta.page}</span> of{" "}
+              <span className="font-semibold">{totalPages}</span>
+            </span>
+          ) : null}
+        </div>
+      </section>
+
+      {/* Error banner */}
+      {isError ? (
+        <div className="my-2 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-semibold text-destructive">
+              Couldn&apos;t load categories.
+            </p>
+            <p className="text-muted-foreground mt-1">
+              {(error as any)?.response?.data?.message ||
+                (error as any)?.message ||
+                "Please check your connection and try again."}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            onClick={() => refetch()}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
+      {/* Categories grid */}
+      <section className="card-premium card-halo p-0 overflow-hidden">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 rounded-xl" />
+            ))}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="p-10">
+            <EmptyMini
+              icon={Inbox}
+              title="No categories match your filters"
+              description="Try clearing the search to see all categories."
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5">
+            {categories.map((c) => (
+              <CategoryCard key={c.id} category={c} />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {meta ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t px-4 py-3">
+            <div className="text-xs text-muted-foreground">
+              Showing{" "}
+              <span className="font-semibold text-foreground">
+                {(meta.page - 1) * meta.limit + 1}–
+                {Math.min(meta.page * meta.limit, meta.total)}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-foreground">
+                {meta.total}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={meta.page <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </Button>
+              <PageNumbers
+                page={meta.page}
+                totalPages={totalPages}
+                onChange={setPage}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={meta.page >= totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-          ) : null}
-
-          {/* Categories grid */}
-          <section className="card-premium card-halo p-0 overflow-hidden">
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-36 rounded-xl" />
-                ))}
-              </div>
-            ) : categories.length === 0 ? (
-              <div className="p-10">
-                <EmptyMini
-                  icon={Inbox}
-                  title="No categories match your filters"
-                  description="Try clearing the search to see all categories."
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5">
-                {categories.map((c) => (
-                  <CategoryCard key={c.id} category={c} />
-                ))}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {meta ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t px-4 py-3">
-                <div className="text-xs text-muted-foreground">
-                  Showing{" "}
-                  <span className="font-semibold text-foreground">
-                    {(meta.page - 1) * meta.limit + 1}–
-                    {Math.min(meta.page * meta.limit, meta.total)}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-semibold text-foreground">
-                    {meta.total}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={meta.page <= 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Prev
-                  </Button>
-                  <PageNumbers
-                    page={meta.page}
-                    totalPages={totalPages}
-                    onChange={setPage}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={meta.page >= totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-        </div>
-      </main>
-      <PublicFooter />
-    </>
+          </div>
+        ) : null}
+      </section>
+    </div>
   );
 }
 
