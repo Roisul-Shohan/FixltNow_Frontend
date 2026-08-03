@@ -387,9 +387,12 @@ function BookingCard({
           )}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-semibold tracking-tight truncate">
+              <Link
+                href={`/dashboard/bookings/${booking.id}`}
+                className="font-semibold tracking-tight truncate hover:underline"
+              >
                 {booking.service?.title ?? "Service"}
-              </h3>
+              </Link>
               <StatusBadge status={booking.status} />
               {booking.payment?.status ? (
                 <PaymentBadge status={booking.payment.status} />
@@ -417,7 +420,9 @@ function BookingCard({
             {isPast && booking.status === "COMPLETED" ? (
               <div className="mt-2">
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/services/${booking.service?.id ?? ""}/review`}>
+                  <Link
+                    href={`/dashboard/reviews/new?bookingId=${booking.id}`}
+                  >
                     <Star className="h-3.5 w-3.5" />
                     Leave a review
                   </Link>

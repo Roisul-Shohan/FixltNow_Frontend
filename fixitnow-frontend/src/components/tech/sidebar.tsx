@@ -13,6 +13,7 @@ import {
   Settings2,
   Star,
   User as UserIcon,
+  Users,
   Wrench,
   X,
 } from "lucide-react";
@@ -65,6 +66,12 @@ const NAV: NavItem[] = [
     href: "/tech/earnings",
     icon: Banknote,
     matchPrefixes: ["/tech/earnings"],
+  },
+  {
+    label: "Customers",
+    href: "/tech/customers",
+    icon: Users,
+    matchPrefixes: ["/tech/customers"],
   },
   {
     label: "Profile",

@@ -96,17 +96,47 @@ export interface Review {
 export interface Booking {
   id: string;
   status: BookingStatus;
-  scheduledAt: string;
-  durationHours: number;
-  totalAmount: number;
-  notes?: string | null;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  hourlyRate?: number | string;
+  totalAmount: number | string;
+  customerAddress?: string | null;
   createdAt: string;
-  customer?: { id: string; name: string };
-  technician?: { id: string; name: string };
-  service?: { id: string; title: string; hourlyRate: number };
-  availability?: { date: string; startTime: string; endTime: string };
-  payment?: { id: string; status: string };
-  review?: { id: string; rating: number };
+  technician?: {
+    id: string;
+    bio?: string;
+    yearsOfExperience?: number;
+    averageRating?: number;
+    totalReviews?: number;
+    profileImage?: string | null;
+    user?: {
+      id: string;
+      name: string;
+      email?: string;
+      phone?: string;
+      profileImage?: string | null;
+    };
+  };
+  service?: {
+    id: string;
+    title: string;
+    description?: string;
+    hourlyRate: number | string;
+    location?: string;
+    category?: { id: string; name: string };
+  };
+  payment?: {
+    id: string;
+    amount?: number | string;
+    status: "PENDING" | "PAID" | "FAILED" | "REFUNDED" | "SUCCEEDED";
+    paymentMethod?: string | null;
+    currency?: string;
+    stripePaymentIntentId?: string | null;
+    paidAt?: string | null;
+    createdAt?: string;
+  };
+  review?: { id: string; rating: number; comment?: string };
 }
 
 export interface Payment {

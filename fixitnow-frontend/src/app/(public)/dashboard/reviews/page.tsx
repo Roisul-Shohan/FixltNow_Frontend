@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Loader2,
   MessageSquareText,
+  PencilLine,
   RefreshCw,
   Search,
   Star,
@@ -261,17 +262,25 @@ export default function CustomerReviewsPage() {
             className="pl-10"
           />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-        >
-          <RefreshCw
-            className={cn("h-4 w-4", isRefetching && "animate-spin")}
-          />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="gradient" size="sm">
+            <Link href="/dashboard/reviews/new">
+              <PencilLine className="h-4 w-4" />
+              Write a review
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+          >
+            <RefreshCw
+              className={cn("h-4 w-4", isRefetching && "animate-spin")}
+            />
+            Refresh
+          </Button>
+        </div>
       </section>
 
       {/* List */}

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -14,12 +14,16 @@ import {
   FolderTree,
   Inbox,
   Loader2,
+  Pencil,
+  Plus,
   Search,
   ShieldCheck,
   Tag,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { api } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
@@ -27,6 +31,17 @@ import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { ApiSuccess, Role } from "@/types";
 
 /* ---------- Backend payload shapes ---------- */
@@ -124,6 +139,61 @@ export default function AdminCategoriesPage() {
 
   const hasActiveFilters = Boolean(debouncedSearch);
 
+  /* ---------- CRUD mutations & dialogs ---------- */
+  const qc = useQueryClient();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<AdminCategory | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminCategory | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: { name: string; description?: string }) =>
+      (await api.post("/admin/categories", payload)).data,
+    onSuccess: () => {
+      toast.success("Category created");
+      setCreateOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin-categories"] });
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message || err?.message || "Couldn't create category"
+      );
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      name?: string;
+      description?: string;
+      isActive?: boolean;
+    }) => (await api.patch(`/admin/categories/${payload.id}`, payload)).data,
+    onSuccess: () => {
+      toast.success("Category updated");
+      setEditTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin-categories"] });
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message || err?.message || "Couldn't update category"
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) =>
+      (await api.delete(`/admin/categories/${id}`)).data,
+    onSuccess: () => {
+      toast.success("Category deleted");
+      setDeleteTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin-categories"] });
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message || err?.message || "Couldn't delete category"
+      );
+    },
+  });
+
   return (
     <div className="py-8 md:py-12">
       {/* Breadcrumb + header */}
@@ -160,6 +230,10 @@ export default function AdminCategoriesPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="gradient" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New category
+            </Button>
             <Button variant="outline" asChild>
               <Link href="/admin/users">
                 <Users className="h-4 w-4" />
@@ -271,7 +345,12 @@ export default function AdminCategoriesPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5">
             {categories.map((c) => (
-              <CategoryCard key={c.id} category={c} />
+              <CategoryCard
+                key={c.id}
+                category={c}
+                onEdit={setEditTarget}
+                onDelete={setDeleteTarget}
+              />
             ))}
           </div>
         )}
@@ -320,7 +399,284 @@ export default function AdminCategoriesPage() {
           </div>
         ) : null}
       </section>
+
+      {/* Create dialog */}
+      <CreateCategoryDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        isPending={createMutation.isPending}
+        onSubmit={(values) => createMutation.mutate(values)}
+      />
+
+      {/* Edit dialog */}
+      <EditCategoryDialog
+        target={editTarget}
+        onClose={() => setEditTarget(null)}
+        isPending={updateMutation.isPending}
+        onSubmit={(values) => {
+          if (!editTarget) return;
+          updateMutation.mutate({ id: editTarget.id, ...values });
+        }}
+      />
+
+      {/* Delete confirmation */}
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete category?</DialogTitle>
+            <DialogDescription>
+              You're about to delete "{deleteTarget?.name}". This can't be
+              undone.
+              {deleteTarget?._count?.service ? (
+                <span className="block mt-2 text-destructive font-semibold">
+                  This category has {deleteTarget._count.service} service(s)
+                  attached. Move them first or deletion will fail.
+                </span>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteTarget && deleteMutation.mutate(deleteTarget.id)
+              }
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete category
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+/* ---------- Dialogs ---------- */
+
+function CreateCategoryDialog({
+  open,
+  onOpenChange,
+  isPending,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  isPending: boolean;
+  onSubmit: (values: { name: string; description?: string }) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  // Reset on open
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setDescription("");
+    }
+  }, [open]);
+
+  const canSubmit = name.trim().length >= 2 && !isPending;
+
+  const onFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit({
+      name: name.trim(),
+      description: description.trim() || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New category</DialogTitle>
+          <DialogDescription>
+            Add a new service category. Technicians can attach services to it.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onFormSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="cat-name">Name</Label>
+            <Input
+              id="cat-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Plumbing"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cat-desc">Description</Label>
+            <Textarea
+              id="cat-desc"
+              value={description}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                setDescription(e.target.value.slice(0, 500))
+              }
+              placeholder="What kind of work falls under this category?"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {description.length} / 500
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="gradient" disabled={!canSubmit}>
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating…
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Create category
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditCategoryDialog({
+  target,
+  onClose,
+  isPending,
+  onSubmit,
+}: {
+  target: AdminCategory | null;
+  onClose: () => void;
+  isPending: boolean;
+  onSubmit: (values: {
+    name?: string;
+    description?: string;
+    isActive?: boolean;
+  }) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
+
+  // Reset on target change
+  useEffect(() => {
+    if (target) {
+      setName(target.name);
+      setDescription(target.description ?? "");
+      setIsActive(Boolean(target.isActive));
+    }
+  }, [target]);
+
+  if (!target) return null;
+
+  const canSubmit = name.trim().length >= 2 && !isPending;
+
+  const onFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit({
+      name: name.trim(),
+      description: description.trim() || undefined,
+      isActive,
+    });
+  };
+
+  return (
+    <Dialog open={Boolean(target)} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit category</DialogTitle>
+          <DialogDescription>
+            Update "{target.name}". Slug stays the same.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onFormSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-name">Name</Label>
+            <Input
+              id="edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-desc">Description</Label>
+            <Textarea
+              id="edit-desc"
+              value={description}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                setDescription(e.target.value.slice(0, 500))
+              }
+              rows={3}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-4 w-4 rounded border-input accent-primary"
+            />
+            <span>Active (visible to customers and technicians)</span>
+          </label>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="gradient" disabled={!canSubmit}>
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -358,7 +714,15 @@ function SortHeader({
   );
 }
 
-function CategoryCard({ category }: { category: AdminCategory }) {
+function CategoryCard({
+  category,
+  onEdit,
+  onDelete,
+}: {
+  category: AdminCategory;
+  onEdit: (c: AdminCategory) => void;
+  onDelete: (c: AdminCategory) => void;
+}) {
   const serviceCount = category._count?.service ?? 0;
 
   return (
@@ -403,6 +767,28 @@ function CategoryCard({ category }: { category: AdminCategory }) {
           {serviceCount} service{serviceCount === 1 ? "" : "s"}
         </span>
         <span>{category.createdAt ? formatDate(category.createdAt) : "—"}</span>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 -mt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onEdit(category)}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Edit
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+          onClick={() => onDelete(category)}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete
+        </Button>
       </div>
     </motion.div>
   );

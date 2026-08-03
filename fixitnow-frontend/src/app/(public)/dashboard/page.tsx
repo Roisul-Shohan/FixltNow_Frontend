@@ -425,7 +425,7 @@ export default function CustomerDashboardPage() {
                         "—"}
                     </td>
                     <td className="py-3 pr-3 text-muted-foreground whitespace-nowrap">
-                      {safeFormatDate(b.scheduledAt)}
+                      {safeFormatDate(b.bookingDate)}
                     </td>
                     <td className="py-3 text-right font-semibold">
                       {formatBDT(b.totalAmount)}
@@ -663,7 +663,7 @@ function BookingRow({ booking }: { booking: Booking }) {
   const tech = booking.technician as any;
   const techName = tech?.user?.name ?? tech?.name ?? "Technician";
   const initial = techName.charAt(0).toUpperCase();
-  const dateStr = safeFormatDate(booking.scheduledAt, "—", {
+  const dateStr = safeFormatDate(booking.bookingDate, "—", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -683,7 +683,10 @@ function BookingRow({ booking }: { booking: Booking }) {
             <Calendar className="h-3 w-3" /> {dateStr}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Clock className="h-3 w-3" /> {booking.durationHours}h
+            <Clock className="h-3 w-3" />
+            {booking.startTime && booking.endTime
+              ? `${booking.startTime}–${booking.endTime}`
+              : "—"}
           </span>
           <span className="inline-flex items-center gap-1 truncate">
             <MapPin className="h-3 w-3" /> by {techName}

@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
   Banknote,
-  Briefcase,
   Calendar,
   CalendarCheck2,
   CalendarClock,
@@ -18,17 +17,11 @@ import {
   Hash,
   Inbox,
   Loader2,
-  Mail,
   MapPin,
-  Phone,
-  RefreshCw,
-  Settings2,
   Sparkles,
   Star,
   TimerReset,
   TrendingUp,
-  User as UserIcon,
-  Wrench,
   XCircle,
 } from "lucide-react";
 
@@ -38,8 +31,6 @@ import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PublicNavbar } from "@/components/public/navbar";
-import { PublicFooter } from "@/components/public/footer";
 import type { ApiSuccess, BookingStatus } from "@/types";
 
 /* ---------- Backend payload shapes ---------- */
@@ -150,106 +141,10 @@ export default function TechnicianDashboardPage() {
   const recent = payload?.recentBookings ?? [];
   const upcoming = payload?.upcomingBookings ?? [];
   const reviews = payload?.recentReviews ?? [];
-  const profile = payload?.profile;
-
-  const greeting = useMemo(() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
-  }, []);
-
-  const firstName =
-    (user?.name || profile?.name || "").split(" ")[0] || "there";
 
   return (
     <>
-      <PublicNavbar />
-      <div className="aurora-bg" aria-hidden="true" />
-
-      <main className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 hero-overlay"
-        />
-
-        <div className="container py-8 md:py-12">
-          {/* Header */}
-          <section className="mb-10">
-            <div className="relative isolate overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-cyan-400/10 to-sky-400/5 px-6 py-10 md:px-10 md:py-14">
-              <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-              <div className="hero-overlay absolute inset-0 -z-10" />
-              <div className="relative flex flex-col items-center text-center gap-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className="inline-flex items-center gap-1.5 rounded-full border bg-background/80 backdrop-blur px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
-                >
-                  <Briefcase className="h-3.5 w-3.5" />
-                  Technician Dashboard
-                </motion.div>
-                <motion.h1
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.05 }}
-                  className="text-3xl md:text-5xl font-bold tracking-tight"
-                >
-                  {greeting},{" "}
-                  <span className="bg-gradient-to-r from-primary via-cyan-400 to-sky-400 bg-clip-text text-transparent">
-                    {firstName}
-                  </span>
-                </motion.h1>
-                <motion.p
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.15 }}
-                  className="max-w-xl text-sm md:text-base text-muted-foreground"
-                >
-                  Track your bookings, earnings, and reviews — all in one
-                  place.
-                </motion.p>
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.25 }}
-                  className="flex flex-wrap items-center justify-center gap-2 pt-2"
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => refetch()}
-                    disabled={isRefetching}
-                  >
-                    <RefreshCw
-                      className={cn(
-                        "h-4 w-4",
-                        isRefetching && "animate-spin"
-                      )}
-                    />
-                    Refresh
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <Link href="/tech/availability">
-                      <Settings2 className="h-4 w-4" />
-                      Availability
-                    </Link>
-                  </Button>
-                  <Button variant="gradient" asChild>
-                    <Link href="/tech/services/new">
-                      <Wrench className="h-4 w-4" />
-                      Add service
-                    </Link>
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </section>
-
-          {/* Profile quick card */}
-          {profile ? <ProfileCard profile={profile} /> : null}
-
-          {/* Soft banner — only for unexpected errors, not missing endpoints */}
+      {/* Soft banner — only for unexpected errors, not missing endpoints */}
           {isError && !isEndpointMissing(error) ? (
             <div className="my-6 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
@@ -505,70 +400,11 @@ export default function TechnicianDashboardPage() {
               </div>
             )}
           </section>
-        </div>
-      </main>
-      <PublicFooter />
     </>
   );
 }
 
 /* ---------- Pieces ---------- */
-
-function ProfileCard({ profile }: { profile: TechProfile }) {
-  return (
-    <section className="card-premium card-halo p-5 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Avatar name={profile.name} src={profile.profileImage ?? undefined} large />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-bold tracking-tight truncate">
-              {profile.name}
-            </h2>
-            <Badge variant="info">TECHNICIAN</Badge>
-            {profile.status === "ACTIVE" ? (
-              <Badge variant="success" className="inline-flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Active
-              </Badge>
-            ) : null}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5" />
-              {profile.email}
-            </span>
-            {profile.phone ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5" />
-                {profile.phone}
-              </span>
-            ) : null}
-            {profile.createdAt ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                Joined {new Date(profile.createdAt).toLocaleDateString()}
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild size="sm">
-            <Link href="/tech/profile">
-              <UserIcon className="h-4 w-4" />
-              Edit profile
-            </Link>
-          </Button>
-          <Button variant="outline" asChild size="sm">
-            <Link href="/tech/availability">
-              <Settings2 className="h-4 w-4" />
-              Availability
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function StatTile({
   label,

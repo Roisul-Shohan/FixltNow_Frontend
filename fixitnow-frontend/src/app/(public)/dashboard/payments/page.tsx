@@ -395,14 +395,17 @@ function PaymentRowItem({ payment }: { payment: PaymentRow }) {
   const techName = payment.booking?.technician?.user?.name ?? "Technician";
   return (
     <li className="rounded-xl border bg-card p-4 hover:shadow-md hover:border-primary/40 transition-all">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <Link
+        href={`/dashboard/payments/${payment.id}`}
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div className="flex items-start gap-3 min-w-0">
           <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-primary to-cyan-400 text-white flex items-center justify-center">
             <CreditCard className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold tracking-tight truncate">
+              <h3 className="font-semibold tracking-tight truncate hover:underline">
                 {payment.booking?.service?.title ?? "Service"}
               </h3>
               <PaymentStatusBadge status={payment.status} />
@@ -429,7 +432,7 @@ function PaymentRowItem({ payment }: { payment: PaymentRow }) {
             <div className="text-[10px] text-muted-foreground">—</div>
           )}
         </div>
-      </div>
+      </Link>
     </li>
   );
 }
