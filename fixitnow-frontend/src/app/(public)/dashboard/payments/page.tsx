@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { api } from "@/lib/api";
-import { cn, formatBDT } from "@/lib/utils";
+import { cn, formatBDT, toDate, safeFormatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -112,8 +112,8 @@ export default function CustomerPaymentsPage() {
       buckets.push({ key, label, amount: 0 });
     }
     for (const p of successful) {
-      if (!p.paidAt) continue;
-      const d = new Date(p.paidAt);
+      const d = toDate(p.paidAt);
+      if (!d) continue;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const bucket = buckets.find((b) => b.key === key);
       if (bucket) bucket.amount += Number(p.amount ?? 0);
@@ -391,7 +391,7 @@ function MonthlyChart({
 }
 
 function PaymentRowItem({ payment }: { payment: PaymentRow }) {
-  const date = payment.paidAt ? new Date(payment.paidAt) : null;
+  const date = toDate(payment.paidAt);
   const techName = payment.booking?.technician?.user?.name ?? "Technician";
   return (
     <li className="rounded-xl border bg-card p-4 hover:shadow-md hover:border-primary/40 transition-all">
@@ -419,13 +419,15 @@ function PaymentRowItem({ payment }: { payment: PaymentRow }) {
           </div>
           {date ? (
             <div className="text-[10px] text-muted-foreground">
-              {date.toLocaleDateString(undefined, {
+              {safeFormatDate(payment.paidAt, "—", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
               })}
             </div>
-          ) : null}
+          ) : (
+            <div className="text-[10px] text-muted-foreground">—</div>
+          )}
         </div>
       </div>
     </li>

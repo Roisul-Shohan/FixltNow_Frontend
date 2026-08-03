@@ -21,8 +21,6 @@ import {
 import { api } from "@/lib/api";
 import { cn, formatBDT, formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/hooks/use-auth-store";
-import { PublicNavbar } from "@/components/public/navbar";
-import { PublicFooter } from "@/components/public/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,9 +129,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const finalCtaLabel = isOwner ? "Manage in dashboard" : ctaLabel;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <PublicNavbar />
-
+    <>
       <section className="container py-6">
         <Link
           href="/services"
@@ -424,9 +420,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
           </aside>
         </main>
       )}
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }
 

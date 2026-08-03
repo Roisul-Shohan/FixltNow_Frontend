@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, toDate, safeFormatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -366,7 +366,7 @@ function ReviewItem({
   onAskDelete: () => void;
 }) {
   const tech = review.technician?.user?.name ?? "Technician";
-  const date = review.createdAt ? new Date(review.createdAt) : null;
+  const date = toDate(review.createdAt);
 
   return (
     <li className="rounded-2xl border bg-card p-5 hover:shadow-md transition-all">
@@ -385,7 +385,7 @@ function ReviewItem({
           </div>
           {date ? (
             <p className="text-xs text-muted-foreground">
-              {date.toLocaleDateString(undefined, {
+              {safeFormatDate(review.createdAt, "—", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",

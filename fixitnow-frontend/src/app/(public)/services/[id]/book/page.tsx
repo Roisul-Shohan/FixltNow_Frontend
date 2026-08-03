@@ -21,8 +21,6 @@ import {
 import { api } from "@/lib/api";
 import { cn, formatBDT } from "@/lib/utils";
 import { useAuthStore } from "@/hooks/use-auth-store";
-import { PublicNavbar } from "@/components/public/navbar";
-import { PublicFooter } from "@/components/public/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -294,9 +292,7 @@ export default function BookServicePage({ params }: PageProps) {
   // Success screen
   if (successBooking) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <PublicNavbar />
-        <main className="container py-16 flex-1">
+      <main className="container py-16 flex-1">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -350,16 +346,12 @@ export default function BookServicePage({ params }: PageProps) {
               </Button>
             </div>
           </motion.div>
-        </main>
-        <PublicFooter />
-      </div>
-    );
-  }
+      </main>
+  );
+}
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <PublicNavbar />
-
+    <>
       <section className="container py-6">
         <Link
           href={`/services/${id}`}
@@ -623,9 +615,7 @@ export default function BookServicePage({ params }: PageProps) {
           )}
         </aside>
       </main>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }
 

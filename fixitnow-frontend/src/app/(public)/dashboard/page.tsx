@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 import { api } from "@/lib/api";
-import { cn, formatBDT } from "@/lib/utils";
+import { cn, formatBDT, safeFormatDate } from "@/lib/utils";
 import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -361,7 +361,7 @@ export default function CustomerDashboardPage() {
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground truncate">
                       {r.service?.title ?? "Service"} •{" "}
-                      {new Date(r.createdAt).toLocaleDateString()}
+                      {safeFormatDate(r.createdAt)}
                     </p>
                   </div>
                 </li>
@@ -425,7 +425,7 @@ export default function CustomerDashboardPage() {
                         "—"}
                     </td>
                     <td className="py-3 pr-3 text-muted-foreground whitespace-nowrap">
-                      {new Date(b.scheduledAt).toLocaleDateString()}
+                      {safeFormatDate(b.scheduledAt)}
                     </td>
                     <td className="py-3 text-right font-semibold">
                       {formatBDT(b.totalAmount)}
@@ -663,7 +663,7 @@ function BookingRow({ booking }: { booking: Booking }) {
   const tech = booking.technician as any;
   const techName = tech?.user?.name ?? tech?.name ?? "Technician";
   const initial = techName.charAt(0).toUpperCase();
-  const dateStr = new Date(booking.scheduledAt).toLocaleDateString(undefined, {
+  const dateStr = safeFormatDate(booking.scheduledAt, "—", {
     weekday: "short",
     month: "short",
     day: "numeric",

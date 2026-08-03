@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
   CreditCard,
@@ -15,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/hooks/use-auth-store";
@@ -25,6 +27,8 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   /** Optional sub-paths that should also count as "active" for this item. */
   matchPrefixes?: string[];
+  /** Optional numeric badge rendered to the right of the label. */
+  badge?: number;
 };
 
 const NAV: NavItem[] = [
@@ -87,6 +91,27 @@ export function CustomerSidebar() {
   const firstName = (user?.name ?? "").split(" ")[0] || "Customer";
   const initial = (user?.name ?? "C").charAt(0).toUpperCase();
 
+  // Lightweight fetch — only used to drive the "due payments" badge on the
+  // Payments nav item. We never render the rows themselves here, so a
+  // generous limit is fine and the response is cached/shared with the bookings
+  // page via the same query key.
+  const { data: bookingsData } = useQuery<any>({
+    queryKey: ["customer-bookings", "ALL"],
+    queryFn: async () =>
+      (await api.get("/bookings", { params: { limit: 100 } })).data,
+    staleTime: 30_000,
+  });
+
+  const dueCount = useMemo(() => {
+    const arr = bookingsData?.data;
+    const list: Array<{ status?: string; payment?: { status?: string } }> =
+      Array.isArray(arr) ? arr : Array.isArray(arr?.data) ? arr.data : [];
+    return list.filter(
+      (b) =>
+        b?.status === "ACCEPTED" && b?.payment?.status !== "PAID"
+    ).length;
+  }, [bookingsData]);
+
   const handleLogout = () => {
     logout();
     if (typeof window !== "undefined") window.location.href = "/";
@@ -133,6 +158,7 @@ export function CustomerSidebar() {
                 pathname={pathname}
                 userName={user?.name}
                 initial={initial}
+                dueCount={dueCount}
                 onNavigate={() => setOpen(false)}
               />
             </div>
@@ -153,7 +179,12 @@ export function CustomerSidebar() {
       {/* Desktop sidebar — sticky just under the navbar, flush with page left edge */}
       <aside className="hidden lg:flex lg:flex-col lg:sticky lg:top-16 lg:self-start w-64 shrink-0 border-r bg-card lg:h-[calc(100vh-4rem)]">
         <div className="flex flex-1 flex-col overflow-y-auto px-4 py-6">
-          <SidebarBody pathname={pathname} userName={user?.name} initial={initial} />
+          <SidebarBody
+            pathname={pathname}
+            userName={user?.name}
+            initial={initial}
+            dueCount={dueCount}
+          />
         </div>
         <div className="border-t bg-card px-4 py-4">
           <Button
@@ -174,13 +205,21 @@ function SidebarBody({
   pathname,
   userName,
   initial,
+  dueCount = 0,
   onNavigate,
 }: {
   pathname: string;
   userName?: string;
   initial: string;
+  dueCount?: number;
   onNavigate?: () => void;
 }) {
+  // Build the navigation list at render time so the Payments item picks up
+  // the latest due-count from the bookings query.
+  const navItems: NavItem[] = NAV.map((item) =>
+    item.href === "/dashboard/payments" ? { ...item, badge: dueCount } : item
+  );
+
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -197,9 +236,11 @@ function SidebarBody({
       </div>
 
       <nav className="mt-6 flex flex-col gap-1" aria-label="Customer navigation">
-        {NAV.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item, pathname);
+          const badge = item.badge ?? 0;
+          const showBadge = badge > 0;
           return (
             <Link
               key={item.href}
@@ -219,7 +260,20 @@ function SidebarBody({
                   active ? "text-primary" : "text-muted-foreground"
                 )}
               />
-              <span>{item.label}</span>
+              <span className="flex-1 truncate">{item.label}</span>
+              {showBadge ? (
+                <span
+                  className={cn(
+                    "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-rose-500 text-white"
+                  )}
+                  aria-label={`${badge} due payments`}
+                >
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              ) : null}
             </Link>
           );
         })}

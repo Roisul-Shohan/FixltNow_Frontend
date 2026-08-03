@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
-import { cn, formatBDT } from "@/lib/utils";
+import { cn, formatBDT, toDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -362,9 +362,10 @@ function BookingCard({
 }) {
   const techName = booking.technician?.name ?? "Technician";
   const techInitial = techName.charAt(0).toUpperCase();
-  const isPast =
-    booking.bookingDate &&
-    new Date(booking.bookingDate) < new Date(new Date().toDateString());
+  const bookingDate = toDate(booking.bookingDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isPast = bookingDate ? bookingDate.getTime() < today.getTime() : false;
   const canCancel = ["PENDING", "ACCEPTED"].includes(booking.status as string);
   const canPay = booking.status === "ACCEPTED";
 
@@ -524,9 +525,24 @@ function PaymentBadge({
 }
 
 function formatBookingDate(yyyyMmDd: string) {
-  const [y, m, d] = yyyyMmDd.split("-").map(Number);
-  if (!y || !m || !d) return yyyyMmDd;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  if (!yyyyMmDd || typeof yyyyMmDd !== "string") return "—";
+  const parts = yyyyMmDd.split("-").map((s) => Number(s));
+  const [y, m, d] = parts;
+  if (
+    parts.length !== 3 ||
+    !Number.isFinite(y) ||
+    !Number.isFinite(m) ||
+    !Number.isFinite(d) ||
+    m < 1 ||
+    m > 12 ||
+    d < 1 ||
+    d > 31
+  ) {
+    return "—";
+  }
+  const dt = new Date(y, m - 1, d);
+  if (Number.isNaN(dt.getTime())) return "—";
+  return dt.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",

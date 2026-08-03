@@ -4,8 +4,6 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
-import { PublicNavbar } from "@/components/public/navbar";
-import { PublicFooter } from "@/components/public/footer";
 import { SearchStrip } from "@/components/public/search-strip";
 import { ServiceCard } from "@/components/services/service-card";
 import { ServicesFilters } from "@/components/services/filters-bar";
@@ -105,9 +103,7 @@ function ServicesBrowser() {
 
 export default function ServicesPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <PublicNavbar />
-
+    <>
       <section className="relative isolate overflow-hidden">
         <div className="lightrays-wrap">
           <div className="lightrays-wrap" />
@@ -162,8 +158,6 @@ export default function ServicesPage() {
       >
         <ServicesBrowser />
       </Suspense>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }

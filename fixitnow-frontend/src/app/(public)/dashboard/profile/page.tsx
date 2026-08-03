@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, safeFormatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -247,10 +247,10 @@ export default function CustomerProfilePage() {
                     {user.createdAt ? (
                       <span className="text-xs text-muted-foreground">
                         Member since{" "}
-                        {new Date(user.createdAt).toLocaleDateString(
-                          undefined,
-                          { month: "short", year: "numeric" }
-                        )}
+                        {safeFormatDate(user.createdAt, "—", {
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </span>
                     ) : null}
                   </div>
