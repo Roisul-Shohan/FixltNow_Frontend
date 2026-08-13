@@ -22,6 +22,11 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+/* ----------------------- Constants ----------------------- */
+
+const DEFAULT_SERVICE_IMAGE =
+  "https://www.magnific.com/free-photos-vectors/electrical-instrument";
+
 /* ----------------------- Types ----------------------- */
 
 interface ApiSuccess<T> {
@@ -45,6 +50,7 @@ interface FormState {
   categoryId: string;
   location: string;
   hourlyRate: string; // string for input handling
+  image: string;
 }
 
 const INITIAL: FormState = {
@@ -53,6 +59,7 @@ const INITIAL: FormState = {
   categoryId: "",
   location: "",
   hourlyRate: "",
+  image: DEFAULT_SERVICE_IMAGE,
 };
 
 /* ----------------------- Page ----------------------- */
@@ -89,6 +96,7 @@ export default function NewServicePage() {
       categoryId: string;
       location: string;
       hourlyRate: number;
+      image?: string;
     }) => {
       const res = await api.post("/services", body);
       return res.data;
@@ -121,6 +129,14 @@ export default function NewServicePage() {
     const rate = Number(form.hourlyRate);
     if (!form.hourlyRate || Number.isNaN(rate) || rate <= 0)
       next.hourlyRate = "Hourly rate must be greater than 0";
+    if (form.image.trim()) {
+      try {
+        // eslint-disable-next-line no-new
+        new URL(form.image.trim());
+      } catch {
+        next.image = "Image must be a valid URL";
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -128,12 +144,14 @@ export default function NewServicePage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    const trimmedImage = form.image.trim();
     createService.mutate({
       title: form.title.trim(),
       description: form.description.trim() || undefined,
       categoryId: form.categoryId,
       location: form.location.trim(),
       hourlyRate: Number(form.hourlyRate),
+      image: trimmedImage || undefined,
     });
   };
 
@@ -217,7 +235,33 @@ export default function NewServicePage() {
             className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </Field>
-
+        {/* Image */}
+        <Field
+          label="Image URL"
+          icon={Sparkles}
+          optional
+          error={errors.image}
+          hint="Paste a public image link. Leave as default to use the placeholder."
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.image.trim() || DEFAULT_SERVICE_IMAGE}
+                alt="Service preview"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = DEFAULT_SERVICE_IMAGE;
+                }}
+              />
+            </div>
+            <Input
+              value={form.image}
+              onChange={(e) => set("image", e.target.value)}
+              placeholder={DEFAULT_SERVICE_IMAGE}
+            />
+          </div>
+        </Field>
         {/* Category */}
         <Field
           label="Category"

@@ -40,6 +40,11 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
+/* ----------------------- Constants ----------------------- */
+
+const DEFAULT_SERVICE_IMAGE =
+  "https://www.magnific.com/free-photos-vectors/electrical-instrument";
+
 /* ----------------------- Types ----------------------- */
 
 interface ApiSuccess<T> {
@@ -60,6 +65,7 @@ interface ServiceRow {
   description?: string;
   hourlyRate: number | string;
   location?: string;
+  image?: string;
   isActive: boolean;
   averageRating?: number;
   totalReviews?: number;
@@ -91,6 +97,7 @@ interface EditFormState {
   categoryId: string;
   location: string;
   hourlyRate: string;
+  image: string;
 }
 
 const EMPTY_EDIT: EditFormState = {
@@ -99,6 +106,7 @@ const EMPTY_EDIT: EditFormState = {
   categoryId: "",
   location: "",
   hourlyRate: "",
+  image: "",
 };
 
 /* ----------------------- Page ----------------------- */
@@ -645,6 +653,7 @@ function EditServiceDialog({
       location: service.location ?? "",
       hourlyRate:
         service.hourlyRate != null ? String(service.hourlyRate) : "",
+      image: service.image ?? "",
     });
     setErrors({});
   }, [service]);
@@ -670,6 +679,7 @@ function EditServiceDialog({
       categoryId?: string;
       location?: string;
       hourlyRate?: number;
+      image?: string;
     }) => {
       const res = await api.patch(
         `/technicians/services/${service!.id}`,
@@ -711,6 +721,14 @@ function EditServiceDialog({
       if (Number.isNaN(rate) || rate <= 0)
         next.hourlyRate = "Hourly rate must be greater than 0";
     }
+    if (form.image.trim()) {
+      try {
+        // eslint-disable-next-line no-new
+        new URL(form.image.trim());
+      } catch {
+        next.image = "Image must be a valid URL";
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -724,6 +742,7 @@ function EditServiceDialog({
       categoryId?: string;
       location?: string;
       hourlyRate?: number;
+      image?: string;
     } = {};
     if (form.title.trim()) payload.title = form.title.trim();
     if (form.description.trim())
@@ -731,6 +750,7 @@ function EditServiceDialog({
     if (form.categoryId) payload.categoryId = form.categoryId;
     if (form.location.trim()) payload.location = form.location.trim();
     if (form.hourlyRate) payload.hourlyRate = Number(form.hourlyRate);
+    if (form.image.trim()) payload.image = form.image.trim();
 
     if (Object.keys(payload).length === 0) {
       toast.error("No changes to save");
@@ -777,6 +797,34 @@ function EditServiceDialog({
               placeholder="What does this service include?"
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="edit-image" className="mb-1.5 inline-block">
+              Image URL
+            </Label>
+            <div className="flex items-center gap-3">
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={form.image.trim() || DEFAULT_SERVICE_IMAGE}
+                  alt="Service preview"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = DEFAULT_SERVICE_IMAGE;
+                  }}
+                />
+              </div>
+              <Input
+                id="edit-image"
+                value={form.image}
+                onChange={(e) => set("image", e.target.value)}
+                placeholder={DEFAULT_SERVICE_IMAGE}
+              />
+            </div>
+            {errors.image ? (
+              <p className="mt-1 text-xs text-destructive">{errors.image}</p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
