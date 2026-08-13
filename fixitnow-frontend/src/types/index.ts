@@ -76,6 +76,8 @@ export interface Service {
   title: string;
   description: string;
   hourlyRate: number;
+  /** Hero image URL — backend fills in the default if the technician doesn't supply one. */
+  image?: string | null;
   location?: string;
   averageRating?: number;
   totalReviews?: number;
