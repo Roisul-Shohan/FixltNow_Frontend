@@ -1,14 +1,12 @@
 "use client";
 
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowRight,
-  ChevronDown,
   Eye,
   EyeOff,
   Loader2,
@@ -16,8 +14,6 @@ import {
   LogIn,
   Mail,
   ShieldCheck,
-  UserCog,
-  UserRound,
   Wrench,
 } from "lucide-react";
 
@@ -39,42 +35,8 @@ function dashboardForRole(role: string | undefined): string {
   return "/dashboard";
 }
 
-// Quick-login shortcuts — one tap fills email/password and submits the form.
-// Customer + technician values match what's stored as the bcrypt hash in the DB
-// (i.e. these strings are literally what's typed as the password — the backend
-// hashes them again on comparison). Admin uses a plain-text password per the
-// auth.service.ts admin branch.
-type QuickLoginProfile = {
-  id: "admin" | "technician" | "customer";
-  label: string;
-  email: string;
-  password: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
-const QUICK_LOGIN_PROFILES: QuickLoginProfile[] = [
-  {
-    id: "admin",
-    label: "Login as Admin",
-    email: "admin@gmail.com",
-    password: "aaaaaaaaaaaaaaa",
-    icon: UserCog,
-  },
-  {
-    id: "technician",
-    label: "Login as Technician",
-    email: "roisul101@gmail.com",
-    password: "$2b$10$X1.A8Mzts5QyBMoIbstC6.JisOf8FLyq.wXwvVs8/l4PcHbUmWyOC",
-    icon: Wrench,
-  },
-  {
-    id: "customer",
-    label: "Login as Customer",
-    email: "roisul192@gmail.com",
-    password: "$2b$10$tjP79HySADsvi6Tr1MmkN.bYimA3QUOJeUntp4.3aP.oYC.JGLfs.",
-    icon: UserRound,
-  },
-];
+// Quick-login shortcut lives in the main navbar (components/public/quick-login-menu.tsx),
+// not on this page.
 
 function LoginForm() {
   const router = useRouter();
@@ -89,42 +51,11 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [quickOpen, setQuickOpen] = useState(false);
-  const quickRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
-
-  // Close the quick-login dropdown on click outside / Escape.
-  useEffect(() => {
-    if (!quickOpen) return;
-    function onDocClick(e: MouseEvent) {
-      if (quickRef.current && !quickRef.current.contains(e.target as Node)) {
-        setQuickOpen(false);
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setQuickOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [quickOpen]);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const pwdValid = password.length >= 6;
   const canSubmit = emailValid && pwdValid && !submitting;
-
-  function applyQuickLogin(profile: QuickLoginProfile) {
-    setEmail(profile.email);
-    setPassword(profile.password);
-    setShowPwd(true);
-    setError(null);
-    setQuickOpen(false);
-    // Submit on the next tick so the controlled inputs flush first.
-    setTimeout(() => formRef.current?.requestSubmit(), 0);
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -256,54 +187,6 @@ function LoginForm() {
               Create an account
             </Link>
           </p>
-
-          {/* Quick-login shortcut — one tap fills and submits as admin / tech / customer */}
-          <div ref={quickRef} className="relative mt-4">
-            <button
-              type="button"
-              onClick={() => setQuickOpen((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={quickOpen}
-              className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 hover:bg-muted px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors"
-            >
-              <LogIn className="h-3.5 w-3.5" />
-              Quick login
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 transition-transform",
-                  quickOpen && "rotate-180"
-                )}
-              />
-            </button>
-            {quickOpen ? (
-              <div
-                role="menu"
-                className="absolute left-0 z-20 mt-2 w-60 overflow-hidden rounded-lg border bg-popover shadow-lg ring-1 ring-black/5"
-              >
-                {QUICK_LOGIN_PROFILES.map((p) => {
-                  const Icon = p.icon;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => applyQuickLogin(p)}
-                      disabled={submitting}
-                      className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left text-sm hover:bg-accent focus:bg-accent focus:outline-none disabled:opacity-50"
-                    >
-                      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-medium">{p.label}</span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {p.email}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
 
           {error ? (
             <div

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/hooks/use-auth-store";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/public/theme-toggle";
+import { QuickLoginMenu } from "@/components/public/quick-login-menu";
 import { Wrench, User as UserIcon, LogOut, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -47,6 +48,7 @@ export function PublicNavbar() {
 
         <div className="hidden md:flex items-center gap-2">
           <ThemeToggle />
+          <QuickLoginMenu variant="navbar" />
           {user ? (
             <>
               <div className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5">
@@ -95,6 +97,11 @@ export function PublicNavbar() {
               <MobileLink href="/services" onClick={() => setOpen(false)}>Services</MobileLink>
               <MobileLink href="/technicians" onClick={() => setOpen(false)}>Technicians</MobileLink>
               <MobileLink href="/categories" onClick={() => setOpen(false)}>Categories</MobileLink>
+              {!user ? (
+                <div className="pt-1">
+                  <QuickLoginMenu variant="navbar" />
+                </div>
+              ) : null}
               {user ? (
                 <Button variant="outline" onClick={async () => { await logout(); setOpen(false); router.push("/"); }}>
                   Logout
