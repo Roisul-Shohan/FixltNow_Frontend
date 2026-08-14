@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PublicNavbar } from "@/components/public/navbar";
 import { PublicFooter } from "@/components/public/footer";
+import { ServiceCard } from "@/components/services/service-card";
 import type {
   ApiSuccess,
   Booking,
@@ -459,7 +460,7 @@ export default function CustomerDashboardPage() {
         />
 
         {!recommended ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-56 rounded-xl" />
             ))}
@@ -470,13 +471,9 @@ export default function CustomerDashboardPage() {
             description="Once you book a service, we'll tailor picks to your needs."
           />
         ) : (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {recommendedServices.map((s, i) => (
-              <RecommendedServiceCard
-                key={s.id}
-                service={s}
-                index={i}
-              />
+              <ServiceCard key={s.id} service={s} index={i} />
             ))}
           </div>
         )}
@@ -768,83 +765,6 @@ function EmptyMini({
         </Button>
       ) : null}
     </div>
-  );
-}
-
-function RecommendedServiceCard({
-  service,
-  index,
-}: {
-  service: Service;
-  index: number;
-}) {
-  const rating = service.averageRating ?? 0;
-  const hasRating = rating > 0;
-  const tech = service.technician as any;
-  const techName = tech?.user?.name ?? tech?.name ?? "—";
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index, 6) * 0.04 }}
-      whileHover={{ y: -3 }}
-      className="h-full"
-    >
-      <Link
-        href={`/services/${service.id}`}
-        className="block h-full card-premium card-halo overflow-hidden hover:shadow-lg transition-shadow"
-      >
-        <div className="relative h-24 bg-gradient-to-br from-primary/20 via-cyan-400/20 to-sky-400/20 flex items-center justify-center">
-          <Wrench className="h-10 w-10 text-primary/40" />
-          {service.category?.name ? (
-            <Badge className="absolute top-3 left-3" variant="info">
-              {service.category.name}
-            </Badge>
-          ) : null}
-        </div>
-        <div className="p-4 space-y-3">
-          <div>
-            <h4 className="font-semibold line-clamp-1">{service.title}</h4>
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-1 min-h-[2.2rem]">
-              {service.description}
-            </p>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/10 px-2 py-1 text-xs">
-              <Star
-                className={cn(
-                  "h-3.5 w-3.5",
-                  hasRating
-                    ? "fill-amber-400 text-amber-400"
-                    : "text-muted-foreground"
-                )}
-              />
-              <span className="font-semibold">
-                {hasRating ? rating.toFixed(1) : "New"}
-              </span>
-            </div>
-            <div className="text-xs text-muted-foreground truncate">
-              by {techName}
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="inline-flex items-baseline gap-1 rounded-md bg-primary/10 px-2 py-1">
-              <span className="text-base font-bold text-primary leading-none">
-                {formatBDT(service.hourlyRate)}
-              </span>
-              <span className="text-[11px] text-primary/70 leading-none">
-                /hr
-              </span>
-            </div>
-            <span className="text-xs font-semibold text-primary inline-flex items-center gap-1">
-              View
-              <ArrowRight className="h-3 w-3" />
-            </span>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
   );
 }
 

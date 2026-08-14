@@ -2,6 +2,7 @@
 
 import { use, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -154,17 +155,30 @@ export default function ServiceDetailPage({ params }: PageProps) {
               transition={{ duration: 0.4 }}
               className="rounded-2xl border bg-card overflow-hidden"
             >
-              <div className="relative h-48 sm:h-56 bg-gradient-to-br from-primary/20 via-cyan-400/20 to-sky-400/20">
-                <div className="absolute inset-0 flex items-center justify-center text-primary/40">
-                  <Wrench className="h-20 w-20" />
-                </div>
+              <div className="relative h-56 sm:h-72 md:h-80 bg-muted overflow-hidden">
+                {service.image ? (
+                  <Image
+                    src={service.image}
+                    alt={service.title}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 60vw"
+                    unoptimized
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 via-cyan-400/20 to-sky-400/20 text-primary/40">
+                    <Wrench className="h-20 w-20" />
+                  </div>
+                )}
+                {/* Subtle bottom gradient so badges remain readable on any photo */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
                 {category?.name ? (
-                  <Badge className="absolute top-4 left-4" variant="info">
+                  <Badge className="absolute top-4 left-4 z-10" variant="info">
                     {category.name}
                   </Badge>
                 ) : null}
                 {hasRating && rating >= 4.5 ? (
-                  <Badge className="absolute top-4 right-4" variant="success">
+                  <Badge className="absolute top-4 right-4 z-10" variant="success">
                     Top Rated
                   </Badge>
                 ) : null}

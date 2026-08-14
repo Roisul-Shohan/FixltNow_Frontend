@@ -66,7 +66,7 @@ function ServicesBrowser() {
 
       <div>
         {l1 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {Array.from({ length: 9 }).map((_, i) => (
               <Skeleton key={i} className="h-72" />
             ))}
@@ -90,7 +90,7 @@ function ServicesBrowser() {
         ) : services.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {services.map((s, i) => (
               <ServiceCard key={s.id} service={s} index={i} />
             ))}
@@ -148,7 +148,7 @@ export default function ServicesPage() {
                 <Skeleton className="h-24 w-full" />
               </div>
             </aside>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {Array.from({ length: 9 }).map((_, i) => (
                 <Skeleton key={i} className="h-72" />
               ))}

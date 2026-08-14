@@ -41,10 +41,6 @@ export function ServiceCard({ service, index = 0 }: { service: Service; index?: 
   const discountPct = originalRate > 0 ? Math.round((1 - hourly / originalRate) * 100) : 0;
   const showDiscount = discountPct > 0 && originalRate > hourly;
 
-  // A pseudo "stock" indicator — derived from the number of upcoming slots so
-  // the number moves around but stays in a believable range.
-  const slotsLeft = Math.max(1, Math.min(25, (service.availabilities?.length ?? 3) * 2));
-
   const imageSrc = service.image && service.image.trim() ? service.image : FALLBACK_IMAGE;
 
   return (
@@ -142,7 +138,7 @@ export function ServiceCard({ service, index = 0 }: { service: Service; index?: 
             </div>
           ) : null}
 
-          {/* Price + stock */}
+          {/* Price */}
           <div className="mt-auto pt-3 border-t space-y-3">
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
@@ -164,10 +160,6 @@ export function ServiceCard({ service, index = 0 }: { service: Service; index?: 
                     </span>
                   </div>
                 ) : null}
-              </div>
-              <div className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground shrink-0">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {slotsLeft} left
               </div>
             </div>
 

@@ -14,8 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PublicNavbar } from "@/components/public/navbar";
 import { PublicFooter } from "@/components/public/footer";
+import { ServiceCard } from "@/components/services/service-card";
 import type { Service, Category } from "@/types";
-import { formatBDT } from "@/lib/utils";
 
 const iconMap: Record<string, any> = {
   Plumbing: Droplet, Electrical: Zap, Cleaning: Sparkles, "AC Repair": Wind, Carpentry: Hammer,
@@ -149,31 +149,10 @@ export default function HomePage() {
             <Link href="/services">See all <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {l1 ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-56" />)
-            : ((services as Service[]) ?? []).map((s) => (
-                <Link key={s.id} href={`/services/${s.id}`}>
-                  <Card className="h-full overflow-hidden cursor-pointer group">
-                    <div className="h-32 bg-gradient-to-br from-primary/20 via-cyan-400/20 to-sky-400/20 relative">
-                      <div className="absolute inset-0 flex items-center justify-center text-primary/40 group-hover:scale-110 transition-transform duration-500">
-                        <Wrench className="h-12 w-12" />
-                      </div>
-                      <Badge className="absolute top-3 left-3" variant="info">{s.category?.name ?? "Service"}</Badge>
-                    </div>
-                    <CardContent className="p-5">
-                      <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">{s.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{s.description}</p>
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                          <span className="font-medium">{s.averageRating?.toFixed(1) ?? "New"}</span>
-                          <span className="text-muted-foreground">({s.totalReviews ?? 0})</span>
-                        </div>
-                        <span className="font-bold">{formatBDT(s.hourlyRate)}<span className="text-xs text-muted-foreground font-normal">/hr</span></span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+            : ((services as Service[]) ?? []).map((s, i) => (
+                <ServiceCard key={s.id} service={s} index={i} />
               ))}
         </div>
       </section>
